@@ -13,7 +13,7 @@ import java.time.Duration
 
 fun main(args : Array<String>) {
 
-    with(PolarisKafka("polaris-kafka-process-sessions")) {
+    with(PolarisKafka("polaris-kafka-session-processor")) {
         val userActivityTopic = topic<UserActivityKey, UserActivityValue>("user-activity",12,2)
 
         // Interim serde - TODO: Polaris-Kafka should handle these better

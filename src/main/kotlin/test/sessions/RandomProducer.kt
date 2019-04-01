@@ -9,7 +9,7 @@ import java.util.*
 
 fun main(args : Array<String>) {
 
-    with(PolarisKafka("blah")) {
+    with(PolarisKafka("polaris-kafka-activity-producer")) {
         val userActivityTopic = topic<UserActivityKey, UserActivityValue>("user-activity",12,2)
 
         userActivityTopic.startProducer()
