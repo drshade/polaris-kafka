@@ -1,0 +1,86 @@
+[
+  {
+    "namespace": "polaris.kafka.test.sessions",
+    "name": "UserActivityKey",
+    "type": "record",
+    "fields" : [
+      {
+        "name" : "userId",
+        "type" : "string"
+      }
+    ]
+  },
+  {
+    "namespace": "polaris.kafka.test.sessions",
+    "name": "UserActivityValue",
+    "type": "record",
+    "fields" : [
+      {
+        "name" : "userId",
+        "type" : "string"
+      },
+      {
+        "name" : "activity",
+        "type" : "string"
+      },
+      {
+        "name" : "resource",
+        "type" : "string"
+      },
+      {
+        "name" : "detail",
+        "type" : "string"
+      }
+    ]
+  },
+  {
+    "namespace": "polaris.kafka.test.sessions",
+    "name": "UserActivityList",
+    "type": "record",
+    "fields" : [
+      {
+        "name" : "session",
+        "type" : {
+          "type": "array",
+          "items": {
+            "name": "activity",
+            "type": "string"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "namespace": "polaris.kafka.test.sessions",
+    "name": "UserSessionValue",
+    "type": "record",
+    "fields" : [
+      {
+        "name" : "userId",
+        "type" : "string"
+      },
+      {
+        "name" : "session",
+        "type" : {
+          "type": "array",
+          "items": {
+            "name": "activity",
+            "type": "string"
+          }
+        }
+      },
+      {
+        "name" : "started",
+        "type" : "long"
+      },
+      {
+        "name" : "ended",
+        "type" : "long"
+      },
+      {
+        "name" : "duration",
+        "type" : "long"
+      }
+    ]
+  }
+]
