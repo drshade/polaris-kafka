@@ -1,0 +1,56 @@
+[
+  {
+    "namespace": "polaris.kafka.websocket",
+    "name": "WebsocketEventKey",
+    "type": "record",
+    "fields" : [
+      {
+        "name" : "id",
+        "type" : "string"
+      }
+    ]
+  },
+  {
+    "namespace": "polaris.kafka.websocket",
+    "name": "WebsocketEventValue",
+    "type": "record",
+    "fields" : [
+      {
+        "name" : "id",
+        "type" : "string"
+      },
+      {
+        "name" : "state",
+        "type" : "string"
+      },
+      {
+        "name" : "principle",
+        "type" : ["null", "string"]
+      },
+      {
+        "name" : "replyPath",
+        "type" : [
+          "null",
+          {
+            "name": "ReplyPath",
+            "type": "record",
+            "fields": [
+              {
+                "name" : "topic",
+                "type" : "string"
+              },
+              {
+                "name" : "partition",
+                "type" : "int"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name" : "data",
+        "type" : ["null", "string"]
+      }
+    ]
+  }
+]

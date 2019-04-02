@@ -1,0 +1,17 @@
+{
+  "name": "test",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "livescript": "^1.6.0",
+    "prelude-ls": "^1.1.2",
+    "ulid": "^2.3.0",
+    "ws": "^6.2.1"
+  }
+}

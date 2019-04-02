@@ -155,11 +155,36 @@ class PolarisKafka {
         return streamsBuilder.stream(topic.topic, topic.consumedWith())
     }
 
-    fun start() {
+    fun start(partitionsAssignedToTopic : ((Map<String, List<Int>>) -> Unit)? = null) {
         println("Starting streams...")
         val topology = streamsBuilder.build()
         println(topology.describe())
         streams = KafkaStreams(topology, properties)
+
+        streams?.setStateListener { newState, oldState ->
+            println("State changed from $oldState to $newState")
+            val partitionAssignment = mutableMapOf<String, MutableList<Int>>()
+            streams?.localThreadsMetadata()?.forEach { metadata ->
+                metadata.activeTasks().forEach { task ->
+
+                    task.topicPartitions().forEach { topicPartition ->
+                        println("Task: ${task.taskId()} Topic: ${topicPartition.topic()} Partition: ${topicPartition.partition()}")
+                        if (!partitionAssignment.containsKey(topicPartition.topic())) {
+                            partitionAssignment[topicPartition.topic()] = mutableListOf()
+                        }
+                        partitionAssignment[topicPartition.topic()]!!.add(topicPartition.partition())
+
+                    }
+                }
+            }
+
+            // Notify the consumer that partitions and topics might have changed
+            //
+            if (partitionsAssignedToTopic != null) {
+                partitionsAssignedToTopic(partitionAssignment)
+            }
+        }
+
         streams?.cleanUp()
         streams?.start()
     }
@@ -169,4 +194,5 @@ class PolarisKafka {
         streams?.close()
     }
 }
+
 
