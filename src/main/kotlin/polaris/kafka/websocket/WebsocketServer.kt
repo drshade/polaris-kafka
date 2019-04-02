@@ -3,22 +3,15 @@ package polaris.kafka.websocket
 import de.huxhorn.sulky.ulid.ULID
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.clients.producer.ProducerRecord
-import org.apache.kafka.streams.StreamsConfig
 import org.apache.kafka.streams.kstream.KStream
 import org.eclipse.jetty.server.Server
 import org.eclipse.jetty.server.ServerConnector
 import org.eclipse.jetty.servlet.ServletContextHandler
 import org.eclipse.jetty.websocket.jsr356.server.ServerContainer
 import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer
-import polaris.kafka.KAFKA_BOOTSTRAP_SERVERS_ENVVAR
-import polaris.kafka.KAFKA_SCHEMA_REGISTRY_URL_ENVVAR
 import polaris.kafka.PolarisKafka
 import polaris.kafka.SafeTopic
-import polaris.kafka.test.sessions.UserActivityKey
-import polaris.kafka.test.sessions.UserActivityValue
-import polaris.kafka.websocket.schema.*
 import java.io.IOException
-import java.security.InvalidParameterException
 import java.util.*
 import javax.websocket.*
 import javax.websocket.server.ServerEndpoint
@@ -76,7 +69,9 @@ class WebsocketServer(
     }
 
     fun join() {
+        println("Starting websocket server, listening on port $port...")
         server.join()
+        println("Websocket server stopped")
     }
 }
 

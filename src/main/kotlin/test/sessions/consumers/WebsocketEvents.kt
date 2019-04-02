@@ -6,7 +6,7 @@ import polaris.kafka.websocket.WebsocketEventValue
 import polaris.kafka.websocket.WebsocketServer
 import java.security.InvalidParameterException
 
-val WEBSOCKET_LISTEN_PORT = "websocket_listen_port"
+const val WEBSOCKET_LISTEN_PORT = "websocket_listen_port"
 
 fun main(args : Array<String>) {
     val listenPort = System.getenv(WEBSOCKET_LISTEN_PORT)
@@ -14,10 +14,9 @@ fun main(args : Array<String>) {
 
     with(PolarisKafka("websocket-server")) {
         val websocketEvents = topic<WebsocketEventKey, WebsocketEventValue>("websocket-events", 12, 3)
+
         val server = WebsocketServer(listenPort.toInt(), "/ws", websocketEvents)
 
-        println("Starting websocket server, listening on port $listenPort...")
         server.join()
-        println("Websocket server stopped")
     }
 }
