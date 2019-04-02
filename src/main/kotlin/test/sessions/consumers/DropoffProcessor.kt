@@ -1,4 +1,4 @@
-package test.sessions
+package test.sessions.consumers
 
 import org.apache.kafka.streams.KeyValue
 import polaris.kafka.PolarisKafka
@@ -10,16 +10,18 @@ fun main(args : Array<String>) {
     with(PolarisKafka("polaris-kafka-dropoff-processor")) {
         val userSessionTopic = topic<UserActivityKey, UserSessionValue>("user-sessions",12,2)
 
+        var countProcess = 0
         consumeStream(userSessionTopic)
             .map {key, value ->
                 //println("Key: $key Value: $value")
+                countProcess++
                 KeyValue(key, value)
             }
             .filter { _, value ->
                 value.getSession().contains("ADDED_TO_CART") && !value.getSession().contains("PAYED")
             }
             .foreach { key, value ->
-                println("User ${key.getUserId()} dropped off! (after ${value.getSession()})")
+                println("Processed $countProcess records - user ${key.getUserId()} dropped off! (after ${value.getSession()})")
             }
 
         start()

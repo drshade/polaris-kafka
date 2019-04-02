@@ -53,9 +53,9 @@ data class SafeTopic<K, V>(
         return Materialized.with(keySerde, valueSerde)
     }
 
-    // Only call this is you want a kafka producer for this topic
+    // Only call this is you want a kafka producers for this topic
     // - keeping in mind the constraint that you can only have a single
-    // producer per topic per process
+    // producers per topic per process
     //
     fun startProducer() {
         producer = KafkaProducer(properties)
@@ -92,11 +92,11 @@ class PolarisKafka {
         properties["key.serializer"] = "io.confluent.kafka.serializers.KafkaAvroSerializer"
         properties["value.serializer"] = "io.confluent.kafka.serializers.KafkaAvroSerializer"
 
-//        properties[StreamsConfig.PRODUCER_PREFIX + ProducerConfig.INTERCEPTOR_CLASSES_CONFIG] =
-//            "io.confluent.monitoring.clients.interceptor.MonitoringProducerInterceptor"
-//
-//        properties[StreamsConfig.CONSUMER_PREFIX + ConsumerConfig.INTERCEPTOR_CLASSES_CONFIG] =
-//            "io.confluent.monitoring.clients.interceptor.MonitoringConsumerInterceptor"
+        properties[StreamsConfig.PRODUCER_PREFIX + ProducerConfig.INTERCEPTOR_CLASSES_CONFIG] =
+            "io.confluent.monitoring.clients.interceptor.MonitoringProducerInterceptor"
+
+        properties[StreamsConfig.CONSUMER_PREFIX + ConsumerConfig.INTERCEPTOR_CLASSES_CONFIG] =
+            "io.confluent.monitoring.clients.interceptor.MonitoringConsumerInterceptor"
 
         properties[StreamsConfig.COMMIT_INTERVAL_MS_CONFIG] = "1000"
 
