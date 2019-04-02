@@ -12,12 +12,8 @@ fun main(args : Array<String>) {
 
         var countProcess = 0
         consumeStream(userSessionTopic)
-            .map {key, value ->
-                //println("Key: $key Value: $value")
-                countProcess++
-                KeyValue(key, value)
-            }
             .filter { _, value ->
+                countProcess++
                 value.getSession().contains("ADDED_TO_CART") && !value.getSession().contains("PAYED")
             }
             .foreach { key, value ->

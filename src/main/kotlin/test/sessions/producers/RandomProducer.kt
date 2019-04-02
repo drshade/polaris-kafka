@@ -44,8 +44,8 @@ fun main(args : Array<String>) {
 
         // Generate a set of users
         //
-        val delay = 5 // max ms
-        val max_users = 1_000
+        val delay = 500 // max ms
+        val max_users = 10
         val users =
             (0 until max_users)
                 .map { "${randomAdjective()}-${userFirstNames.shuffled(random)[0]}" }
@@ -64,8 +64,5 @@ fun main(args : Array<String>) {
             //
             Thread.sleep(random.nextInt(delay).toLong())
         }
-
     }
-
-
 }
