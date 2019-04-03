@@ -29,7 +29,7 @@ class TrackAndTransformToAction : Transformer<WebsocketEventKey?, WebsocketEvent
         return if (key != null && value != null) {
 
             val actionKey = ActionKey(
-                value.getPrinciple()
+                value.getPrincipal()
             )
             val actionValue =
                 gson.fromJson(value.getData(), ActionValue::class.java)

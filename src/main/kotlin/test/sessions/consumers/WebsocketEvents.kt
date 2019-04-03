@@ -1,5 +1,7 @@
 package test.sessions.consumers
 
+import com.google.gson.Gson
+import com.google.gson.annotations.SerializedName
 import polaris.kafka.PolarisKafka
 import polaris.kafka.actionrouter.ActionKey
 import polaris.kafka.actionrouter.ActionValue
@@ -8,6 +10,10 @@ import java.awt.event.ActionEvent
 import java.security.InvalidParameterException
 
 const val WEBSOCKET_LISTEN_PORT = "websocket_listen_port"
+
+data class AuthableJson(
+    @SerializedName("token") val token : String
+)
 
 fun main(args : Array<String>) {
     val listenPort = System.getenv(WEBSOCKET_LISTEN_PORT)
@@ -23,14 +29,32 @@ fun main(args : Array<String>) {
 
         val pongStream = consumeStream(pong)
 
-        val server = WebsocketServer(listenPort.toInt(), "/ws", websocketTopic)
+        val authPlugin = { body : String ->
+            val gson = Gson()
+            val authableBody = gson.fromJson<AuthableJson>(body, AuthableJson::class.java)
+
+            if (authableBody?.token != null) {
+                println("Just authenticated ${authableBody.token}")
+                authableBody.token
+            }
+            else {
+                // Not authenticated
+                //
+                null
+            }
+        }
+
+        val server = WebsocketServer(
+            listenPort.toInt(),
+            "/ws",
+            websocketTopic,
+            authPlugin)
 
         RouteToTopicFrom(websocketStream, "TEST", "PING", ping)
         RouteFromTopicTo(websocketTopic, "TEST", "PONG", pongStream, CAST.UNICAST)
 
         RouteToTopicFrom(websocketStream, "TEST", "BIGPING", ping)
         RouteFromTopicTo(websocketTopic, "TEST", "BIGPONG", pongStream, CAST.BROADCAST)
-
 
         start()
         server.join()

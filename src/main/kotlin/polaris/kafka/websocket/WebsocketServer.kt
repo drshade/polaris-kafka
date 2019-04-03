@@ -20,7 +20,8 @@ import javax.websocket.server.ServerEndpointConfig
 class WebsocketServer(
     val port: Int,
     val path : String,
-    val websocketTopic : SafeTopic<WebsocketEventKey, WebsocketEventValue>) {
+    val websocketTopic : SafeTopic<WebsocketEventKey, WebsocketEventValue>,
+    val authPlugin : ((body : String) -> (String?))? = null) {
 
     val server : Server
     val connector : ServerConnector
@@ -45,7 +46,7 @@ class WebsocketServer(
         val producer = websocketTopic.producer!!
         val consumer = processor.consumeStream(websocketTopic)
 
-        val endpointHandler = WebsocketServerEndpointHandler(websocketTopic.topic, producer, consumer)
+        val endpointHandler = WebsocketServerEndpointHandler(websocketTopic.topic, producer, consumer, authPlugin)
 
         val serverEndpointConfig =
             ServerEndpointConfig
@@ -94,7 +95,8 @@ enum class CAST {
 @ServerEndpoint(value = "")
 class WebsocketServerEndpointHandler(private val topic: String,
                                      private val producer: KafkaProducer<WebsocketEventKey, WebsocketEventValue>,
-                                     private val consumer: KStream<WebsocketEventKey, WebsocketEventValue>) {
+                                     private val consumer: KStream<WebsocketEventKey, WebsocketEventValue>,
+                                     private val authPlugin : ((body : String) -> (String?))? = null) {
 
     private val sessions = Collections.synchronizedSet(HashSet<Session>())
     private val sessionsToWid = mutableMapOf<String, String>()
@@ -111,7 +113,7 @@ class WebsocketServerEndpointHandler(private val topic: String,
                         sendToWid(value.getReplyPath().getId(), value.getData())
 
                     CAST.MULTICAST.name ->
-                        println("MULTICAST (send to principle) NOT YET SUPPORTED!")
+                        println("MULTICAST (send to principal) NOT YET SUPPORTED!")
 
                     CAST.BROADCAST.name ->
                         broadcast(value.getData())
@@ -175,21 +177,33 @@ class WebsocketServerEndpointHandler(private val topic: String,
         val wid = sessionsToWid[session.id]
         println("Message from $wid -> ${data}")
 
+        // Invoke the auth function if this session is not authenticated
+        //
+        if (session.userProperties["PRINCIPAL"] == null) {
+            val principal = authPlugin?.invoke(data)
+            if (principal != null) {
+                session.userProperties["PRINCIPAL"] = principal
+            }
+        }
+
         // RCVD event
         //
-        emitEvent(session, "RCVD", null, data)
+        emitEvent(session, "RCVD", session.userProperties["PRINCIPAL"]?.toString(), data)
     }
 
     @OnClose
     fun closed(session : Session) {
         sessions.remove(session)
         val wid = sessionsToWid[session.id]
-        sessionsToWid.remove(session.id)
-        widToSessions.remove(wid)
 
         // CLOSED event
         //
-        emitEvent(session, "CLOSED", null, null)
+        emitEvent(session, "CLOSED", session.userProperties["PRINCIPAL"]?.toString(), null)
+
+        // Only remove later :)
+        //
+        sessionsToWid.remove(session.id)
+        widToSessions.remove(wid)
 
         println("Closed $wid")
     }
@@ -198,12 +212,15 @@ class WebsocketServerEndpointHandler(private val topic: String,
     fun error(session : Session, throwable : Throwable) {
         sessions.remove(session)
         val wid = sessionsToWid[session.id]
-        sessionsToWid.remove(session.id)
-        widToSessions.remove(wid)
 
         // ERROR event
         //
-        emitEvent(session, "ERROR", null, null)
+        emitEvent(session, "ERROR", session.userProperties["PRINCIPAL"]?.toString(), null)
+
+        // Only remove later :)
+        //
+        sessionsToWid.remove(session.id)
+        widToSessions.remove(wid)
 
         println("Error $wid -> ${throwable.message}")
     }

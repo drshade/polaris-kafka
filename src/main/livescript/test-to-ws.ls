@@ -23,6 +23,7 @@ ws.on 'message', (data) ->
 
 ping = (ws) ->
 	event =
+		token: "tom@synthesis.co.za"
 		resource: "TEST"
 		action: "PING"
 	console.log "Sending  #{event |> JSON.stringify}"
@@ -30,6 +31,7 @@ ping = (ws) ->
 
 bigping = (ws) ->
 	event =
+		token: "tom@synthesis.co.za"
 		resource: "TEST"
 		action: "BIGPING"
 	console.log "Sending  #{event |> JSON.stringify}"

@@ -24,7 +24,7 @@
         "type" : "string"
       },
       {
-        "name" : "principle",
+        "name" : "principal",
         "type" : ["null", "string"]
       },
       {
