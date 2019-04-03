@@ -9,16 +9,28 @@ ws = new WebSocket do
 		rejectUnauthorized: false
 
 ws.on 'open', ->
-	for i from 0 to 99999
-		ws |> login
-	ws.close()
+	for i from 0 to 0
+		ws |> ping
+		ws |> bigping
+	return
+	setTimeout do
+		-> ws.close()
+		10000
 
 ws.on 'message', (data) ->
 	console.log "Received #{data}"
 	return
 
-login = (ws) ->
-	cmd =
-		msg: "blah"
-	console.log "Sending  #{cmd |> JSON.stringify}"
-	ws.send (cmd |> JSON.stringify)
+ping = (ws) ->
+	event =
+		resource: "TEST"
+		action: "PING"
+	console.log "Sending  #{event |> JSON.stringify}"
+	ws.send (event |> JSON.stringify)
+
+bigping = (ws) ->
+	event =
+		resource: "TEST"
+		action: "BIGPING"
+	console.log "Sending  #{event |> JSON.stringify}"
+	ws.send (event |> JSON.stringify)

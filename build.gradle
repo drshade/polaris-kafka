@@ -68,15 +68,19 @@ dependencies {
     compile('de.huxhorn.sulky:de.huxhorn.sulky.ulid:8.2.0')
 }
 
+compileKotlin {
+    kotlinOptions.jvmTarget = "1.8"
+}
+
 // This is a dummy - start scripts are detailed below
 //
 mainClassName = "dummy"
 
-task TestService(type:CreateStartScripts) {
-    applicationName = 'TestService'
-    mainClassName = 'polaris.kafka.test.TestServiceKt'
+task SessionProcessor(type:CreateStartScripts) {
+    applicationName = 'SessionProcessor'
+    mainClassName = 'test.sessions.consumers.SessionProcessor'
     classpath = startScripts.classpath
     outputDir = startScripts.outputDir
 }
-applicationDistribution.from(TestService) { into 'bin' }
+applicationDistribution.from(SessionProcessor) { into 'bin' }
 

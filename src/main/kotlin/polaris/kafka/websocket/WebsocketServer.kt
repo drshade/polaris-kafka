@@ -85,6 +85,12 @@ class WebsocketServerConfigurator(
     }
 }
 
+enum class CAST {
+    UNICAST,
+    MULTICAST,
+    BROADCAST
+}
+
 @ServerEndpoint(value = "")
 class WebsocketServerEndpointHandler(private val topic: String,
                                      private val producer: KafkaProducer<WebsocketEventKey, WebsocketEventValue>,
@@ -96,11 +102,21 @@ class WebsocketServerEndpointHandler(private val topic: String,
     public var partitions : List<Int>? = null
 
     init {
-        // Anything "SENT" should go to connected sockets
+        // How to dispatch different responses
         //
         consumer
-            .filter { _, value -> value.getState() == "SENT" }
-            .foreach { _, value -> broadcast(value.getData()) }
+            .foreach { _, value ->
+                when (value.getState()) {
+                    CAST.UNICAST.name ->
+                        sendToWid(value.getReplyPath().getId(), value.getData())
+
+                    CAST.MULTICAST.name ->
+                        println("MULTICAST (send to principle) NOT YET SUPPORTED!")
+
+                    CAST.BROADCAST.name ->
+                        broadcast(value.getData())
+                }
+            }
     }
 
     @OnOpen
@@ -118,7 +134,7 @@ class WebsocketServerEndpointHandler(private val topic: String,
         // OPENED event
         //
         val key = WebsocketEventKey(wid)
-        val value = WebsocketEventValue(wid, "OPENED", null, getReplyPath(), null)
+        val value = WebsocketEventValue(wid, "OPENED", null, getReplyPath(wid), null)
         val record = ProducerRecord(topic, key, value)
         producer.send(record) { _, exception ->
             if (exception != null) {
@@ -128,10 +144,10 @@ class WebsocketServerEndpointHandler(private val topic: String,
         println("Opened ${session.id} (wid: $wid)")
     }
 
-    fun getReplyPath() : ReplyPath? {
+    fun getReplyPath(wid : String) : ReplyPath? {
         if (partitions != null) {
             if (!partitions!!.isEmpty()) {
-                return ReplyPath(topic, partitions!!.shuffled()[0])
+                return ReplyPath(wid, topic, partitions!!.shuffled()[0])
             }
         }
         return null
@@ -139,19 +155,25 @@ class WebsocketServerEndpointHandler(private val topic: String,
 
     fun emitEvent(session : Session, state : String, principle : String?, data : String?) {
         val wid = sessionsToWid[session.id]
-        val key = WebsocketEventKey(wid)
-        val value = WebsocketEventValue(wid, state, principle, getReplyPath(), data)
-        val record = ProducerRecord(topic, key, value)
-        producer.send(record) { _, exception ->
-            if (exception != null) {
-                println(exception.toString())
+        if (wid != null) {
+            val key = WebsocketEventKey(wid)
+            val value = WebsocketEventValue(wid, state, principle, getReplyPath(wid), data)
+            val record = ProducerRecord(topic, key, value)
+            producer.send(record) { _, exception ->
+                if (exception != null) {
+                    println(exception.toString())
+                }
             }
+        }
+        else {
+            println("Session ${session.id} no longer connected")
         }
     }
 
     @OnMessage
     fun message(session : Session, data : String) {
-        println("Message from ${session.id} -> ${data}")
+        val wid = sessionsToWid[session.id]
+        println("Message from $wid -> ${data}")
 
         // RCVD event
         //
@@ -169,7 +191,7 @@ class WebsocketServerEndpointHandler(private val topic: String,
         //
         emitEvent(session, "CLOSED", null, null)
 
-        println("Closed ${session.id}")
+        println("Closed $wid")
     }
 
     @OnError
@@ -183,7 +205,18 @@ class WebsocketServerEndpointHandler(private val topic: String,
         //
         emitEvent(session, "ERROR", null, null)
 
-        println("Error ${session.id} -> ${throwable.message}")
+        println("Error $wid -> ${throwable.message}")
+    }
+
+    fun sendToWid(wid : String, data : String) {
+        val sessionId = widToSessions[wid]
+        if (sessionId != null) {
+            println("Message to $wid -> $data")
+            send(sessionId, data)
+        }
+        else {
+            println("Unable to find session with wid $wid")
+        }
     }
 
     fun send(sessionId : String, data : String) {

@@ -1,0 +1,32 @@
+[
+  {
+    "namespace": "polaris.kafka.actionrouter",
+    "name": "ActionKey",
+    "type": "record",
+    "fields" : [
+      {
+        "name" : "principle",
+        "type" : ["null", "string"]
+      }
+    ]
+  },
+  {
+    "namespace": "polaris.kafka.actionrouter",
+    "name": "ActionValue",
+    "type": "record",
+    "fields" : [
+      {
+        "name" : "resource",
+        "type" : "string"
+      },
+      {
+        "name" : "action",
+        "type" : "string"
+      },
+      {
+        "name" : "data",
+        "type" : ["null", "string"]
+      }
+    ]
+  }
+]
