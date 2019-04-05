@@ -1,14 +1,15 @@
 import React, { Component } from 'react';
 import store from '../../store';
 import { createSelector } from 'reselect';
+import { Link } from 'react-router-dom';
 
 import './Home.css';
 
 import { toggleHome } from '../../actions/navigation.toggleHome.action';
 import { connect } from 'react-redux';
 
-import { 
-  Button,
+import {
+  Button
 } from '@material-ui/core';
 
 import BottomBar from '../bottom-bar/BottomBar';
@@ -50,7 +51,7 @@ class Home extends Component {
 
           {!this.props.profile && (
             <div className="rocket">
-              <img src="/assets/images/logo/synthesis-logo-wide-white.png" alt="synthesis" className="synthesis-logo" /> 
+              <img src="/assets/images/logo/synthesis-logo-wide-white.png" alt="synthesis" className="synthesis-logo" />
               <div className="three-simple-steps-wrapper">
                 <p>A FRESH<br /> APPROACH< br />TO STREAM<br />BANKING</p>
               </div>
@@ -62,7 +63,24 @@ class Home extends Component {
         </div>
 
         <div className="shopping-options-container">
-          
+          {this.props.profile && (
+            <div className="wallet-menu">
+              <Link to="/add-money">
+                <img src="/assets/images/money-bag.svg" alt="add-money" />
+                <span>Add Money</span>
+              </Link>
+              <hr/>
+              <Link to="/scan">
+                <img src="/assets/images/mobile-pay.svg" alt="mobile-pay" />
+                <span>Pay</span>
+              </Link>
+              <hr/>
+              <Link to="/receive">
+                <img src="/assets/images/receive.svg" alt="receive" />
+                <span>Receive Money</span>
+              </Link>
+            </div>
+          )}
         </div>
 
         {/* <div className="testcode">
@@ -74,7 +92,7 @@ class Home extends Component {
           <div>Balance: {this.props.balance} </div>
         </div> */}
 
-        {this.props.profile && <BottomBar />}      
+        {this.props.profile && <BottomBar />}
       </div>
     );
   }

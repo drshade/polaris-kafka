@@ -3,8 +3,6 @@ import React, { Component } from 'react';
 import './Wallet.css';
 
 import { connect } from 'react-redux';
-import { Link } from 'react-router-dom';
-
 import MoneyTicker from '../money-ticker/MoneyTicker';
 
 let useMoneyTicker = true;
@@ -31,22 +29,6 @@ class Wallet extends Component {
               </div>
             )}
           </div>
-          <div className="add-money">
-            <Link to="/add-money">
-              <img src="/assets/images/money-bag.svg" alt="add-money" />
-              Add Money
-            </Link>
-          </div>
-        </div>
-        <div className="buttons">
-          <Link to="/scan">
-            <img src="/assets/images/mobile-pay.svg" alt="mobile-pay" />
-            Pay
-          </Link>
-          <Link to="/receive">
-            <img src="/assets/images/receive.svg" alt="receive" />
-            Receive Money
-          </Link>
         </div>
       </div>
     );
