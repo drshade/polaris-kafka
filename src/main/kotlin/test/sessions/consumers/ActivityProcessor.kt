@@ -33,10 +33,10 @@ fun main(args: Array<String>) {
 
                 .toStream()
 
-                .map { activityName, count ->
+                .map { strActivityName, count ->
                     KeyValue(
-                            ActivityKey(activityName),
-                            ActivityValue(activityName, mutableListOf(""), count)
+                            ActivityKey(strActivityName),
+                            ActivityValue(strActivityName, mutableListOf(""), count)
                     )
                 }
 
