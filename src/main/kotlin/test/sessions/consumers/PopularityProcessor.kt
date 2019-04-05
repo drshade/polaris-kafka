@@ -21,12 +21,12 @@ fun main(args: Array<String>) {
 
                 .windowedBy(SessionWindows.with(Duration.ofSeconds(60)).grace(Duration.ofSeconds(30)))
 
-                .reduce({ a, b ->
+                .reduce { a, b ->
                     if (a.getCount() > b.getCount())
                         a
                     else
                         b
-                })
+                }
 
 
                 // Suppress - we only want closed windows
