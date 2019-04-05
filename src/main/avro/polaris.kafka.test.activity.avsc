@@ -1,0 +1,38 @@
+[
+  {
+    "namespace": "polaris.kafka.test.activities",
+    "name": "ActivityKey",
+    "type": "record",
+    "fields" : [
+      {
+        "name" : "activity",
+        "type" : "string"
+      }
+    ]
+  },
+  {
+    "namespace": "polaris.kafka.test.activities",
+    "name": "ActivityValue",
+    "type": "record",
+    "fields" : [
+      {
+        "name" : "activity",
+        "type" : "string"
+      },
+      {
+        "name" : "users",
+        "type" : {
+          "type": "array",
+          "items": {
+            "name": "userId",
+            "type": "string"
+          }
+        }
+      },
+      {
+        "name" : "count",
+        "type" : "long"
+      }
+    ]
+  }
+]
