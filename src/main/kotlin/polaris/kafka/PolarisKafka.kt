@@ -173,7 +173,6 @@ class PolarisKafka {
                             partitionAssignment[topicPartition.topic()] = mutableListOf()
                         }
                         partitionAssignment[topicPartition.topic()]!!.add(topicPartition.partition())
-
                     }
                 }
             }

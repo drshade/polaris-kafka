@@ -11,9 +11,29 @@ import java.security.InvalidParameterException
 
 const val WEBSOCKET_LISTEN_PORT = "websocket_listen_port"
 
+// For this example we just look for a field in the JSON incoming body called "token"
+// and use this for authentication
+//
 data class AuthableJson(
     @SerializedName("token") val token : String
 )
+
+val authPlugin = { body : String ->
+    val gson = Gson()
+    val authableBody = gson.fromJson<AuthableJson>(body, AuthableJson::class.java)
+
+    if (authableBody?.token != null) {
+        // For this example just use the token as the principal (testing obviously only!)
+        //
+        println("Just authenticated ${authableBody.token}")
+        authableBody.token
+    }
+    else {
+        // Not authenticated
+        //
+        null
+    }
+}
 
 fun main(args : Array<String>) {
     val listenPort = System.getenv(WEBSOCKET_LISTEN_PORT)
@@ -22,41 +42,27 @@ fun main(args : Array<String>) {
     with(PolarisKafka("websocket-server")) {
         val websocketTopic =
                 topic<WebsocketEventKey, WebsocketEventValue>("websocket-events", 12, 3)
-        val websocketStream = consumeStream(websocketTopic)
 
-        val ping = topic<ActionKey, ActionValue>("pings", 12, 3)
-        val pong = topic<ActionKey, ActionValue>("pongs", 12, 3)
-
-        val pongStream = consumeStream(pong)
-
-        val authPlugin = { body : String ->
-            val gson = Gson()
-            val authableBody = gson.fromJson<AuthableJson>(body, AuthableJson::class.java)
-
-            if (authableBody?.token != null) {
-                println("Just authenticated ${authableBody.token}")
-                authableBody.token
-            }
-            else {
-                // Not authenticated
-                //
-                null
-            }
-        }
-
-        val server = WebsocketServer(
+        val websocketServer = WebsocketServer(
             listenPort.toInt(),
             "/ws",
             websocketTopic,
             authPlugin)
 
-        RouteToTopicFrom(websocketStream, "TEST", "PING", ping)
-        RouteFromTopicTo(websocketTopic, "TEST", "PONG", pongStream, CAST.UNICAST)
+        with(ActionRouter(websocketTopic)) {
+            val ping = topic<ActionKey, ActionValue>("pings", 12, 3)
+            val pong = topic<ActionKey, ActionValue>("pongs", 12, 3)
 
-        RouteToTopicFrom(websocketStream, "TEST", "BIGPING", ping)
-        RouteFromTopicTo(websocketTopic, "TEST", "BIGPONG", pongStream, CAST.BROADCAST)
+            toTopic("TEST", "PING", ping)
+            toWebsocket("TEST", "PONG", pong, CAST.UNICAST)
+
+            toTopic("TEST", "BIGPING", ping)
+            toWebsocket("TEST", "BIGPONG", pong, CAST.BROADCAST)
+
+            start()
+        }
 
         start()
-        server.join()
+        websocketServer.join()
     }
 }

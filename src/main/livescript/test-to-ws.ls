@@ -1,7 +1,9 @@
 WebSocket = require 'ws'
 ulid = require 'ulid'
 
-url = 'ws://localhost:8080/ws'
+url = process.argv[3] || 'ws://localhost:8080/ws'
+
+console.log "Connecting to #{url}"
 
 ws = new WebSocket do
 	url
@@ -9,7 +11,7 @@ ws = new WebSocket do
 		rejectUnauthorized: false
 
 ws.on 'open', ->
-	for i from 0 to 0
+	for i from 0 to 999
 		ws |> ping
 		ws |> bigping
 	return
