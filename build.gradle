@@ -95,7 +95,7 @@ applicationDistribution.from(RandomProducer) { into 'bin' }
 
 task ActivityProcessor(type:CreateStartScripts) {
     applicationName = 'ActivityProcessor'
-    mainClassName = 'test.sessions.producers.ActivityProcessorKt'
+    mainClassName = 'test.sessions.consumers.ActivityProcessorKt'
     classpath = startScripts.classpath
     outputDir = startScripts.outputDir
 }
