@@ -1,27 +1,45 @@
 package test.sessions.consumers
 
-import org.apache.kafka.streams.KeyValue
+import org.apache.kafka.streams.kstream.Grouped
+import org.apache.kafka.streams.kstream.SessionWindows
+import org.apache.kafka.streams.kstream.Suppressed
 import polaris.kafka.PolarisKafka
 import polaris.kafka.test.activities.ActivityKey
 import polaris.kafka.test.activities.ActivityValue
-import polaris.kafka.test.sessions.UserActivityKey
-import polaris.kafka.test.sessions.UserSessionValue
+import java.time.Duration
 
-fun main(args : Array<String>) {
+fun main(args: Array<String>) {
 
     with(PolarisKafka("polaris-kafka-popularity-processor")) {
-        val activityTopic = topic<ActivityKey, ActivityValue>("activity",12,2)
+        val activityTopic = topic<ActivityKey, ActivityValue>("activity", 12, 2)
+
 
         consumeStream(activityTopic)
+                .groupBy({ activityKey, _ ->
+                    activityKey
+                }, Grouped.with(activityTopic.keySerde, activityTopic.valueSerde))
 
-//                .filter { _, value ->
-//                    countProcess++
-//                    value.getSession().contains("ADDED_TO_CART") && !value.getSession().contains("PAYED")
-//                }
+                .windowedBy(SessionWindows.with(Duration.ofSeconds(60)).grace(Duration.ofSeconds(30)))
 
-//                .foreach { key, value ->
-//                    println("activity ${key.getUserId()} most popular (after ${value.getSession()})")
-//                }
+                .reduce({ a, b ->
+                    if (a.getCount() > b.getCount())
+                        a
+                    else
+                        b
+                })
+
+
+                // Suppress - we only want closed windows
+                //
+                .suppress(Suppressed.untilWindowCloses(Suppressed.BufferConfig.unbounded()))
+
+                // As a stream
+                //
+                .toStream()
+
+                .foreach { key, value ->
+                    println("activity (${value.getCount()}) ${value.getActivity()} most popular (after ${key.window().end() - key.window().start()})")
+                }
 
         start()
     }
