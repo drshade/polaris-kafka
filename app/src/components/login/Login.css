@@ -1,0 +1,25 @@
+.paper {
+    margin-right: 2em;
+}
+
+.profile-picture {
+    height: 1.5em;
+    width: 1.5em;
+    border-radius: 1.5em;
+    margin: -0.2em;
+    background-size: cover;
+}
+
+[role='tooltip'] {
+    z-index: 1;
+}
+
+[role='tooltip'] button {
+    box-shadow: none !important;
+    border: none !important;
+}
+
+[role='tooltip'] button>div {
+    margin-right: 0 !important;
+    padding: 10px 10px 5px 0 !important;
+}

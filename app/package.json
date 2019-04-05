@@ -1,0 +1,52 @@
+{
+  "name": "wakanda",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    "@material-ui/core": "^3.9.2",
+    "@material-ui/icons": "^3.0.2",
+    "@material-ui/lab": "^3.0.0-alpha.30",
+    "@material-ui/styles": "^4.0.0-alpha.5",
+    "@okta/okta-react": "^1.2.0",
+    "@okta/okta-signin-widget": "^2.17.0",
+    "comlink": "^3.2.0",
+    "connected-react-router": "^6.3.1",
+    "history": "^4.7.2",
+    "qrcode.react": "^0.9.3",
+    "react": "^16.8.4",
+    "react-confetti": "^2.7.0",
+    "react-dom": "^16.8.4",
+    "react-google-login": "^5.0.2",
+    "react-redux": "^6.0.1",
+    "react-router-dom": "^4.3.1",
+    "react-scripts": "^2.1.8",
+    "react-simple-animate": "^2.6.5",
+    "redux": "^4.0.1",
+    "redux-persist": "^5.10.0",
+    "redux-thunk": "^2.3.0",
+    "reselect": "^4.0.0",
+    "socket.io-client": "^2.2.0"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build && yarn workbox",
+    "workbox": "rm build/precache-manifest.* build/service-worker.js && workbox injectManifest workbox-config.js",
+    "start:workbox": "yarn build && http-server build/ -p 3000",
+    "deploy": "yarn build && aws s3 cp build/ s3://streams-web-wpa/ --acl public-read --recursive --profile rd",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject"
+  },
+  "eslintConfig": {
+    "extends": "react-app"
+  },
+  "browserslist": [
+    ">0.2%",
+    "not dead",
+    "not ie <= 11",
+    "not op_mini all"
+  ],
+  "devDependencies": {
+    "workbox-cli": "^4.0.0"
+  },
+  "proxy": "https://d289thuiw7n9ug.cloudfront.net"
+}

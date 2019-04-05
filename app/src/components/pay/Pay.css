@@ -1,0 +1,83 @@
+h4 {
+    text-align: center;
+}
+
+.disc {
+    background-color: var(--accent-color);
+    border-radius: 4em;
+    box-shadow: 0 2px 2px 0 rgba(0, 0, 0, .4);
+    display: table;
+    height: 6em;
+    margin: auto;
+    text-align: center;
+    width: 6em;
+}
+
+.disc span {
+    display: table-cell;
+    font-size: 2.5em;
+    height: 0em;
+    margin: auto;
+    text-transform: uppercase;
+    vertical-align: middle;
+    width: 100%;
+}
+
+.fields {
+    margin: 2em;
+}
+
+.fields label {
+    display: block;
+    margin: auto;
+}
+.fields div {
+    margin: 0.5em 0;
+}
+
+
+.fields .currency {
+    color: var(--primary-color);
+    font-size: 1.5em;
+    font-weight: 400;
+    margin-right: 0;
+    margin-top: -.5em;
+}
+
+.fields > div:first-of-type input {
+    color: var(--primary-color);
+    font-size: 2.5em;
+    font-weight: 400;
+    text-align: center;
+    width: calc(100% - 1em);
+ }
+
+ .fields > div:nth-last-child(2) input {
+    font-size: 1.05em;
+    color: var(--text-grey);
+ }
+
+.fields ::-webkit-input-placeholder {
+    color: #aeaeae !important;
+}
+
+
+span.currency {
+    color: rgba(0, 0, 0, 0.54);
+    margin-right: 5px;
+}
+
+.fields div.button-container {
+    position: absolute;
+    bottom: 2em;
+    left: 2em;
+    right: 2em;
+}
+
+.fields button {
+    width: 100%;
+    background-color: rgb(255, 200, 42);
+    color: #000;
+    border-radius: 2em;
+    padding: 12px 0;
+}

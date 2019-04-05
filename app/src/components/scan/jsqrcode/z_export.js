@@ -1,0 +1,2 @@
+// Default export
+export {qrcode}; 

@@ -1,0 +1,68 @@
+h2, h3 {
+    display: block;
+    text-align: center;
+    margin: 0.2em;
+}
+
+h3 {
+    font-size: 1em;
+}
+
+h5 {
+    padding-left: 2em;
+}
+
+h5 svg {
+    height: 0.6em !important;
+    margin: 0 0.6em;
+}
+
+div.limits {
+    display: flex;
+    justify-content:space-evenly;
+    margin: 1em auto 2em auto;
+    width: 100%;
+}
+
+div.description {
+    color: #b0b0b0;
+    text-align: center;
+    font-size: 0.8em;
+}
+
+div.amount {
+    text-align: center;
+    font-size: 1.5em;
+    font-weight: bold;
+    display: flex;
+}
+
+sub.currency {
+    font-size: 1em;
+    margin-right: 3px;
+    margin-top: 0.2em;
+}
+
+div.kyc {
+    background-color: var(--accent-color-light);
+    font-size: 0.8em;
+    padding: 2em;
+    text-align: center;
+}
+div.kyc div {
+    flex: 0 1 auto;
+}
+div.kyc button {
+    background-color: var(--accent-color);
+    border-radius: 2em;
+    color: #000;
+    margin: 1em 0;
+    padding: 12px 0;
+    width: 100%;
+}
+
+div.kyc a {
+    display: block;
+    margin-top: 1em;
+    text-align: center;
+}
