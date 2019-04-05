@@ -1,0 +1,23 @@
+.textFields {
+    width: 100%;
+}
+
+p.terms {
+    color: #b0b0b0;
+    font-size: 0.6em;
+    margin: 10px 0 20px 0;
+    text-align: center;
+}
+
+form.user-info {
+    margin: 0 1.3em;
+    text-align: center;
+}
+
+form.user-info button {
+    background-color: rgb(255, 200, 42);
+    border-radius: 2em;
+    color: #000;
+    padding: 12px 0;
+    width: 20em;
+}
