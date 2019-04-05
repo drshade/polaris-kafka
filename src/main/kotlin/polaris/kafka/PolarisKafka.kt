@@ -185,7 +185,7 @@ class PolarisKafka {
             }
         }
 
-        streams?.cleanUp()
+        // streams?.cleanUp()
         streams?.start()
     }
 
