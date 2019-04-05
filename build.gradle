@@ -78,9 +78,33 @@ mainClassName = "dummy"
 
 task SessionProcessor(type:CreateStartScripts) {
     applicationName = 'SessionProcessor'
-    mainClassName = 'test.sessions.consumers.SessionProcessor'
+    mainClassName = 'test.sessions.consumers.SessionProcessorKt'
     classpath = startScripts.classpath
     outputDir = startScripts.outputDir
 }
 applicationDistribution.from(SessionProcessor) { into 'bin' }
 
+
+task RandomProducer(type:CreateStartScripts) {
+    applicationName = 'RandomProducer'
+    mainClassName = 'test.sessions.producers.RandomProducerKt'
+    classpath = startScripts.classpath
+    outputDir = startScripts.outputDir
+}
+applicationDistribution.from(RandomProducer) { into 'bin' }
+
+task ActivityProcessor(type:CreateStartScripts) {
+    applicationName = 'ActivityProcessor'
+    mainClassName = 'test.sessions.consumers.ActivityProcessorKt'
+    classpath = startScripts.classpath
+    outputDir = startScripts.outputDir
+}
+applicationDistribution.from(ActivityProcessor) { into 'bin' }
+
+task PopularityProcessor(type:CreateStartScripts) {
+    applicationName = 'PopularityProcessor'
+    mainClassName = 'test.sessions.consumers.PopularityProcessorKt'
+    classpath = startScripts.classpath
+    outputDir = startScripts.outputDir
+}
+applicationDistribution.from(PopularityProcessor) { into 'bin' }

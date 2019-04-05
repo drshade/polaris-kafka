@@ -1,0 +1,19 @@
+.qrCode {
+    width: 200px;
+    margin: 1em auto;
+    padding: 1em;
+}
+
+.qrCode ~ h2 {
+    margin: 0.2em 0 .6em;
+}
+
+h2, h3, i {
+    display: block;
+    text-align: center;
+    margin: 0.2em;
+}
+
+i {
+    font-size: 0.7em;
+}

@@ -33,7 +33,7 @@ fun main(args : Array<String>) {
 
         val random = Random()
         val events = listOf(
-            "LOGGED_IN", "FAILED_AUTH", "ADDED_TO_CART", "PAYED", "SEARCHED",
+            "LOGGED_IN", "FAILED_AUTH", "ADDED_TO_CART", "PAID", "SEARCHED",
             "UPDATED_PROFILE", "ADDED_FRIEND", "APPLIED_COUPON", "LOGGED_OUT"
         )
         val userFirstNames = listOf(
