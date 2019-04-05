@@ -101,3 +101,10 @@ task ActivityProcessor(type:CreateStartScripts) {
 }
 applicationDistribution.from(ActivityProcessor) { into 'bin' }
 
+task PopularityProcessor(type:CreateStartScripts) {
+    applicationName = 'PopularityProcessor'
+    mainClassName = 'test.sessions.consumers.PopularityProcessorKt'
+    classpath = startScripts.classpath
+    outputDir = startScripts.outputDir
+}
+applicationDistribution.from(PopularityProcessor) { into 'bin' }

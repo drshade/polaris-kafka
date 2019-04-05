@@ -21,7 +21,7 @@ fun main(args: Array<String>) {
 
         userActivityListSerde.configure(serdeConfig, false)
 
-        val activityTopic = topic<ActivityKey, ActivityValue>("activities", 12, 2)
+        val activityTopic = topic<ActivityKey, ActivityValue>("activity", 12, 2)
 
         consumeStream(userActivityTopic)
 
@@ -33,10 +33,10 @@ fun main(args: Array<String>) {
 
                 .toStream()
 
-                .map { key, value ->
+                .map { activityName, count ->
                     KeyValue(
-                            ActivityKey(key),
-                            ActivityValue(key, mutableListOf(""), value)
+                            ActivityKey(activityName),
+                            ActivityValue(activityName, mutableListOf(""), count)
                     )
                 }
 
