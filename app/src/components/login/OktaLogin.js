@@ -25,7 +25,7 @@ export default class OktaLogin extends Component {
       logo: '/react.svg',
       i18n: {
         en: {
-          'primaryauth.title': 'Sign in to Wakanda',
+          'primaryauth.title': 'Sign in to Streams',
         },
       },
       authParams: {

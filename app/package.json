@@ -1,5 +1,5 @@
 {
-  "name": "wakanda",
+  "name": "streams-wpa",
   "version": "0.1.0",
   "private": true,
   "dependencies": {
@@ -32,7 +32,7 @@
     "build": "react-scripts build && yarn workbox",
     "workbox": "rm build/precache-manifest.* build/service-worker.js && workbox injectManifest workbox-config.js",
     "start:workbox": "yarn build && http-server build/ -p 3000",
-    "deploy": "yarn build && aws s3 cp build/ s3://streams-web-wpa/ --acl public-read --recursive --profile rd",
+    "deploy": "yarn build && aws s3 cp build/ s3://streams-web-wpa/ --acl public-read --recursive",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
