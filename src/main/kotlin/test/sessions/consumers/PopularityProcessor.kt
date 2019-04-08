@@ -19,7 +19,7 @@ fun main(args: Array<String>) {
                     activityKey
                 }, Grouped.with(activityTopic.keySerde, activityTopic.valueSerde))
 
-                .windowedBy(SessionWindows.with(Duration.ofSeconds(60)).grace(Duration.ofSeconds(30)))
+                .windowedBy(SessionWindows.with(Duration.ofSeconds(30))) // .grace(Duration.ofSeconds(30)))
 
                 .reduce { a, b ->
                     if (a.getCount() > b.getCount())
@@ -38,7 +38,7 @@ fun main(args: Array<String>) {
                 .toStream()
 
                 .foreach { key, value ->
-                    println("activity (${value.getCount()}) ${value.getActivity()} most popular (after ${key.window().end() - key.window().start()})")
+                    println("activity (${value.getCount()}) ${value.getActivity()} most popular (ended ${key.window().endTime()})")
                 }
 
         start()
