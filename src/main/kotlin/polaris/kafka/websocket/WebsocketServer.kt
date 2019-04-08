@@ -1,9 +1,17 @@
 package polaris.kafka.websocket
 
 import de.huxhorn.sulky.ulid.ULID
+import io.confluent.kafka.streams.serdes.avro.SpecificAvroSerde
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.clients.producer.ProducerRecord
+import org.apache.kafka.common.serialization.Serdes
+import org.apache.kafka.common.utils.Bytes
+import org.apache.kafka.streams.KeyValue
+import org.apache.kafka.streams.kstream.Grouped
 import org.apache.kafka.streams.kstream.KStream
+import org.apache.kafka.streams.kstream.Materialized
+import org.apache.kafka.streams.state.KeyValueStore
+import org.apache.kafka.streams.state.WindowStore
 import org.eclipse.jetty.server.Server
 import org.eclipse.jetty.server.ServerConnector
 import org.eclipse.jetty.servlet.ServletContextHandler
@@ -46,7 +54,7 @@ class WebsocketServer(
         val producer = websocketTopic.producer!!
         val consumer = processor.consumeStream(websocketTopic)
 
-        val endpointHandler = WebsocketServerEndpointHandler(websocketTopic.topic, producer, consumer, authPlugin)
+        val endpointHandler = WebsocketServerEndpointHandler(websocketTopic.topic, processor, producer, consumer, authPlugin)
 
         val serverEndpointConfig =
             ServerEndpointConfig
@@ -94,6 +102,7 @@ enum class CAST {
 
 @ServerEndpoint(value = "")
 class WebsocketServerEndpointHandler(private val topic: String,
+                                     private val processor : PolarisKafka,
                                      private val producer: KafkaProducer<WebsocketEventKey, WebsocketEventValue>,
                                      private val consumer: KStream<WebsocketEventKey, WebsocketEventValue>,
                                      private val authPlugin : ((body : String) -> (String?))? = null) {
@@ -101,9 +110,59 @@ class WebsocketServerEndpointHandler(private val topic: String,
     private val sessions = Collections.synchronizedSet(HashSet<Session>())
     private val sessionsToWid = mutableMapOf<String, String>()
     private val widToSessions = mutableMapOf<String, String>()
-    public var partitions : List<Int>? = null
+
+    var partitions : List<Int>? = null
 
     init {
+        // Yes kak
+        //
+        val websocketByPrincipalValueSerde = SpecificAvroSerde<WebsocketByPrincipalValue>()
+        websocketByPrincipalValueSerde.configure(processor.serdeConfig, false)
+
+        val websocketEventValueSerde = SpecificAvroSerde<WebsocketEventValue>()
+        websocketEventValueSerde.configure(processor.serdeConfig, false)
+
+        // Materialize currently logged in users by principal
+        //
+        val connectedAuthenticatedWebsockets =
+            consumer
+                .filter { key, value ->
+                    value.getPrincipal() != null
+                }
+                .map { key, value ->
+                    KeyValue(value.getPrincipal(), value)
+                }
+                .groupByKey(Grouped.with(Serdes.String(), websocketEventValueSerde))
+                .aggregate(
+                    { WebsocketByPrincipalValue("", mutableListOf()) },
+                    { key, value, accum : WebsocketByPrincipalValue ->
+                        if (value.getState() != "CLOSED" && value.getState() != "ERROR") {
+                            // Add this websocket id if it doesn't already exist
+                            //
+                            if (!accum.getIds().contains(value.getId())) {
+                                WebsocketByPrincipalValue(key, accum.getIds() + value.getId())
+                            }
+                            // Otherwise do nothing
+                            //
+                            else {
+                                WebsocketByPrincipalValue(key, accum.getIds())
+                            }
+                        }
+                        else {
+                            // Remove all references to this websocket id
+                            //
+                            WebsocketByPrincipalValue(key, accum.getIds().filter { e -> e != value.getId() })
+                        }
+                    },
+                    Materialized.`as`<String, WebsocketByPrincipalValue, KeyValueStore<Bytes, ByteArray>>("WebsocketsByPrinciple")
+                        .withKeySerde(Serdes.String())
+                        .withValueSerde(websocketByPrincipalValueSerde)
+                )
+                .toStream()
+                .foreach { key, value ->
+                    println("$key -> $value")
+                }
+
         // How to dispatch different responses
         //
         consumer

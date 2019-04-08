@@ -2,11 +2,16 @@ package polaris.kafka.websocket
 
 import com.google.gson.Gson
 import org.apache.avro.specific.SpecificRecord
+import org.apache.kafka.clients.producer.KafkaProducer
+import org.apache.kafka.clients.producer.ProducerRecord
 import org.apache.kafka.streams.KeyValue
 import org.apache.kafka.streams.kstream.KStream
 import org.apache.kafka.streams.kstream.Transformer
 import org.apache.kafka.streams.kstream.TransformerSupplier
+import org.apache.kafka.streams.processor.Processor
 import org.apache.kafka.streams.processor.ProcessorContext
+import org.apache.kafka.streams.processor.ProcessorSupplier
+import polaris.kafka.PolarisKafka
 import polaris.kafka.SafeTopic
 import polaris.kafka.actionrouter.ActionValue
 import polaris.kafka.actionrouter.ActionKey
@@ -20,12 +25,12 @@ class TrackAndTransformToAction : Transformer<WebsocketEventKey?, WebsocketEvent
     private var context : ProcessorContext? = null
 
     override fun init(context : ProcessorContext?) {
-        println("TrackAndTransformToAction.init() called")
+        //("TrackAndTransformToAction.init() called")
         this.context = context
     }
 
     override fun transform(key : WebsocketEventKey?, value : WebsocketEventValue?) : KeyValue<ActionKey?, ActionValue?> {
-        println("TrackAndTransformToAction.transform() called")
+        //println("TrackAndTransformToAction.transform() called")
         return if (key != null && value != null) {
 
             val actionKey = ActionKey(
@@ -47,7 +52,7 @@ class TrackAndTransformToAction : Transformer<WebsocketEventKey?, WebsocketEvent
     }
 
     override fun close() {
-        println("TrackAndTransformToAction.close() called")
+        //println("TrackAndTransformToAction.close() called")
     }
 }
 
@@ -55,12 +60,12 @@ class TrackAndTransformFromAction (private val cast : CAST) : Transformer<Action
     private var context : ProcessorContext? = null
 
     override fun init(context : ProcessorContext?) {
-        println("TrackAndTransformFromAction.init() called")
+        //println("TrackAndTransformFromAction.init() called")
         this.context = context
     }
 
     override fun transform(key : ActionKey?, value : ActionValue?) : KeyValue<WebsocketEventKey?, WebsocketEventValue?> {
-        println("TrackAndTransformFromAction.transform() called")
+        //println("TrackAndTransformFromAction.transform() called")
         return if (key != null && value != null) {
 
             // Grab the replyPath header and re-hydrate
@@ -85,18 +90,50 @@ class TrackAndTransformFromAction (private val cast : CAST) : Transformer<Action
     }
 
     override fun close() {
-        println("TrackAndTransformFromAction.close() called")
+        //println("TrackAndTransformFromAction.close() called")
     }
 }
 
-fun RouteFromTopicTo (
-    topic : SafeTopic<WebsocketEventKey, WebsocketEventValue>,
-    matchResource : String,
-    matchAction : String,
-    from : KStream<ActionKey, ActionValue>,
-    cast : CAST = CAST.UNICAST) {
+class ActionRouter(private val websocketTopic: SafeTopic<WebsocketEventKey, WebsocketEventValue>) {
 
-    from
+    private val websocketStream : KStream<WebsocketEventKey, WebsocketEventValue>
+    private val polarisKafka = PolarisKafka("polaris-kafka-action-router")
+    private val websocketProducer : KafkaProducer<WebsocketEventKey, WebsocketEventValue>
+
+    // Hold the references to any streams we are consuming
+    //
+    private val consumedStreams = mutableMapOf<String, KStream<ActionKey, ActionValue>>()
+
+    init {
+        websocketStream = polarisKafka.consumeStream(websocketTopic)
+        websocketTopic.startProducer()
+        websocketProducer = websocketTopic.producer!!
+    }
+
+    fun start () {
+        polarisKafka.start()
+    }
+
+    fun toWebsocket (
+        matchResource : String,
+        matchAction : String,
+        from : SafeTopic<ActionKey, ActionValue>,
+        cast : CAST = CAST.UNICAST) {
+
+        // This could cause topology issue in the future where an ActionRouter might need to consume from the
+        // same stream twice. If that ever happens then we should keep a reference to that topic and just re-use it
+        // here instead.
+        //
+        if (consumedStreams.containsKey(from.topic)) {
+            // If we already have it, return it
+            //
+            consumedStreams[from.topic]!!
+        } else {
+            // Otherwise construct, add and return it
+            //
+            consumedStreams[from.topic] = polarisKafka.consumeStream(from)
+            consumedStreams[from.topic]!!
+        }
         .filter { key, value ->
             value?.getResource() == matchResource && value.getAction() == matchAction
         }
@@ -105,30 +142,41 @@ fun RouteFromTopicTo (
         })
         .filter { key, value -> key != null && value != null }
         .map { key, value -> KeyValue(key!!, value!!) }
-        .to(topic.topic, topic.producedWith())
-}
-
-fun RouteToTopicFrom (
-    from : KStream<WebsocketEventKey, WebsocketEventValue>,
-    matchResource : String,
-    matchAction : String,
-    topic : SafeTopic<ActionKey, ActionValue>) {
-
-    from
-        .filter { _, value ->
-            if (value.getData() == null) {
-                println("Cannot route with empty payload")
+        .foreach { key, value ->
+            val record = ProducerRecord(value.getReplyPath().getTopic(), value.getReplyPath().getPartition(), key, value)
+            websocketProducer.send(record) { _, exception ->
+                if (exception != null) {
+                    println(exception.toString())
+                } else {
+                    println("Produced message - ${record.value()}")
+                }
             }
-            value.getData() != null
         }
-        .transform (TransformerSupplier<WebsocketEventKey?, WebsocketEventValue?, KeyValue<ActionKey?, ActionValue?>> {
-            TrackAndTransformToAction()
-        })
-        .filter { _, value ->
-            value?.getResource() == matchResource && value.getAction() == matchAction
-        }
-        .map { key, value ->
-            KeyValue(key!!, value!!)
-        }
-        .to(topic.topic, topic.producedWith())
+        //.to(websocketTopic.topic, websocketTopic.producedWith())
+    }
+
+    fun toTopic (
+        matchResource : String,
+        matchAction : String,
+        topic : SafeTopic<ActionKey, ActionValue>) {
+
+        websocketStream
+            .filter { _, value ->
+                if (value.getData() == null) {
+                    println("Cannot route with empty payload")
+                }
+                value.getData() != null
+            }
+            .transform (TransformerSupplier<WebsocketEventKey?, WebsocketEventValue?, KeyValue<ActionKey?, ActionValue?>> {
+                TrackAndTransformToAction()
+            })
+            .filter { _, value ->
+                value?.getResource() == matchResource && value.getAction() == matchAction
+            }
+            .map { key, value ->
+                KeyValue(key!!, value!!)
+            }
+            .to(topic.topic, topic.producedWith())
+    }
 }
+
