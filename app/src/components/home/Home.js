@@ -72,7 +72,7 @@ class Home extends Component {
               <hr/>
               <Link to="/scan">
                 <img src="/assets/images/mobile-pay.svg" alt="mobile-pay" />
-                <span>Pay</span>
+                <span>Pay Someone</span>
               </Link>
               <hr/>
               <Link to="/receive">
