@@ -107,7 +107,7 @@
     text-decoration: none;
     color: #212121;
     display: block;
-    margin: 2em;    
+    margin: .5em 2em .5em 1em;    
 }
 
 .home .wallet-menu span {

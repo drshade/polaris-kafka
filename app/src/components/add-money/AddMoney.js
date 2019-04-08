@@ -6,6 +6,7 @@ import { TextField, InputAdornment, Button } from '@material-ui/core';
 import './AddMoney.css';
 import store from '../../store';
 
+import { amountToAdd } from '../../actions/wallet.amountToAdd.action';
 import { deposit } from '../../actions/wallet.deposit.action';
 import { generate } from '../../services/reference.service';
 import { push } from 'connected-react-router';
@@ -26,11 +27,12 @@ class AddMoney extends Component {
   }
 
   depositMoney() {
-    let reference = generate();
-    store.dispatch(deposit(reference, this.props.amountToAdd));
+    const reference = generate();
+
+    store.dispatch(amountToAdd(this.state.amount));
+    store.dispatch(deposit(reference, this.state.amount));  
     store.dispatch(push('/'));
   }
-
 
   render() {
     let { balance } = this.props;

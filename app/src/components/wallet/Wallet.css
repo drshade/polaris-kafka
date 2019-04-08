@@ -24,7 +24,7 @@
 }
 
 .wallet .money img {
-    height: 3em;
+    height: 2.2em;
     display: block;
     margin: 0 auto;
 }
@@ -53,9 +53,9 @@
 
 .wallet sub.currency {
     position: absolute;
-    font-size: 2.6em;
+    font-size: 2.2em;
     opacity: 0.4;
-    bottom: -52px;
+    bottom: -30px;
     left: -10px;
 }
 
