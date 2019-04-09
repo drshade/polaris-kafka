@@ -10,6 +10,8 @@ import polaris.kafka.test.activities.ActivityValue
 import polaris.kafka.test.activities.PopularityValue
 import java.time.Duration
 
+// https://www.youtube.com/watch?v=SgEaHrA1KfI
+
 fun main(args: Array<String>) {
 
     with(PolarisKafka("polaris-kafka-popularity-processor")) {
@@ -36,19 +38,26 @@ fun main(args: Array<String>) {
                 //
                 // .suppress(Suppressed.untilWindowCloses(Suppressed.BufferConfig.unbounded()))
 
-                // As a stream
-                //
-                .toStream()
-
-                .map { winActKey, actValue ->
-                    KeyValue(winActKey.key(),
-                            PopularityValue(
-                                winActKey.key().getActivity(),
-                                actValue.getCount(),
-                                winActKey.window().start()
-                            )
+                .mapValues { winActKey, actValue ->
+                    PopularityValue(
+                            winActKey.key().getActivity(),
+                            actValue.getCount(),
+                            winActKey.window().start()
                     )
                 }
+
+                .toStream()
+//
+                .map { winActKey, value ->
+                    KeyValue(winActKey.key(), value)
+//                            PopularityValue(
+//                                    winActKey.key().getActivity(),
+//                                    actValue.getCount(),
+//                                    winActKey.window().start()
+//                            )
+//                    )
+                }
+
 
                 .through(popularityTopic.topic, popularityTopic.producedWith())
 
