@@ -1,13 +1,10 @@
 package test.sessions.consumers
 
+import org.apache.kafka.common.serialization.Serdes
 import org.apache.kafka.streams.KeyValue
-import org.apache.kafka.streams.kstream.Grouped
-import org.apache.kafka.streams.kstream.SessionWindows
-import org.apache.kafka.streams.kstream.Suppressed
+import org.apache.kafka.streams.kstream.*
 import polaris.kafka.PolarisKafka
-import polaris.kafka.test.activities.ActivityKey
-import polaris.kafka.test.activities.ActivityValue
-import polaris.kafka.test.activities.PopularityValue
+import polaris.kafka.test.activities.*
 import java.time.Duration
 
 // https://www.youtube.com/watch?v=SgEaHrA1KfI
@@ -17,55 +14,47 @@ fun main(args: Array<String>) {
     with(PolarisKafka("polaris-kafka-popularity-processor")) {
         val activityTopic = topic<ActivityKey, ActivityValue>("activity", 12, 2)
 
-        val popularityTopic = topic<ActivityKey, PopularityValue>("popularity", 2, 1)
+        val popularityTopic = topic<ActivityKey, PopularityValue>("popularity", 12, 1)
 
+        var countProcess = 0
         consumeStream(activityTopic)
-                .groupBy({ activityKey, _ ->
-                    activityKey
-                }, Grouped.with(activityTopic.keySerde, activityTopic.valueSerde))
 
-                .windowedBy(SessionWindows.with(Duration.ofSeconds(30))) // .grace(Duration.ofSeconds(30)))
+                .groupBy({ _, _ ->
+                    countProcess++
+                    "" // return static => ungrouped
+                }, Grouped.with(Serdes.String(), activityTopic.valueSerde))
+
+                .windowedBy(TimeWindows.of(Duration.ofSeconds(60)))
 
                 .reduce { a, b ->
-                    if (a.getCount() > b.getCount())
-                        a
-                    else
-                        b
-                }
-
-
-                // Suppress - we only want closed windows
-                //
-                // .suppress(Suppressed.untilWindowCloses(Suppressed.BufferConfig.unbounded()))
-
-                .mapValues { winActKey, actValue ->
-                    PopularityValue(
-                            winActKey.key().getActivity(),
-                            actValue.getCount(),
-                            winActKey.window().start()
-                    )
+                    if (a.getCount() > b.getCount()) a
+                    else b
                 }
 
                 .toStream()
-//
-                .map { winActKey, value ->
-                    KeyValue(winActKey.key(), value)
-//                            PopularityValue(
-//                                    winActKey.key().getActivity(),
-//                                    actValue.getCount(),
-//                                    winActKey.window().start()
-//                            )
-//                    )
-                }
 
+                .map { k, v ->
+                    KeyValue(ActivityKey(k.key()),
+                            PopularityValue(
+                                    v.getActivity(),
+                                    v.getCount(),
+                                    (k.window().end() - k.window().start()) / 1000
+                            )
+                    )
+                }
 
                 .through(popularityTopic.topic, popularityTopic.producedWith())
 
-                .foreach { key, value ->
-                    println("activity (${value.getCount()}) ${value.getActivity()} most popular since ${value.getSince()}")
+                .foreach { _, v ->
+
+                    if (v == null)
+                        println("Processed $countProcess records")
+                    else {
+                        println("Most popular: (${v.getCount()}) ${v.getActivity()}")
+                        println("Processed $countProcess records; ${v.getSince()}s window")
+                    }
                 }
 
         start()
     }
-
 }

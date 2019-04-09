@@ -1,49 +1,47 @@
 package test.sessions.consumers
 
-import io.confluent.kafka.streams.serdes.avro.SpecificAvroSerde
 import org.apache.kafka.common.serialization.Serdes
 import org.apache.kafka.streams.KeyValue
-import org.apache.kafka.streams.kstream.Grouped
+import org.apache.kafka.streams.kstream.*
 import polaris.kafka.PolarisKafka
 import polaris.kafka.test.activities.ActivityKey
 import polaris.kafka.test.activities.ActivityValue
 import polaris.kafka.test.sessions.UserActivityKey
-import polaris.kafka.test.sessions.UserActivityList
 import polaris.kafka.test.sessions.UserActivityValue
+import java.time.Duration
 
 fun main(args: Array<String>) {
 
     with(PolarisKafka("polaris-kafka-activity-processor")) {
         val userActivityTopic = topic<UserActivityKey, UserActivityValue>("user-activity", 12, 2)
 
-        // Interim serde - TODO: Polaris-Kafka should handle these better
-        val userActivityListSerde = SpecificAvroSerde<UserActivityList>()
-
-        userActivityListSerde.configure(serdeConfig, false)
-
         val activityTopic = topic<ActivityKey, ActivityValue>("activity", 12, 2)
 
+        var countProcess = 0
         consumeStream(userActivityTopic)
 
-                .groupBy({ key, v ->
+                .groupBy({ _, v ->
+                    countProcess++
                     v.getActivity()
                 }, Grouped.with(Serdes.String(), userActivityTopic.valueSerde))
+
+                .windowedBy(TimeWindows.of(Duration.ofSeconds(60)))
 
                 .count()
 
                 .toStream()
 
-                .map { strActivityName, count ->
+                .map { winKey, count ->
                     KeyValue(
-                            ActivityKey(strActivityName),
-                            ActivityValue(strActivityName, mutableListOf(""), count)
+                            ActivityKey(winKey.key()),
+                            ActivityValue(winKey.key(), mutableListOf(""), count)
                     )
                 }
 
                 .through(activityTopic.topic, activityTopic.producedWith())
 
                 .foreach { key, value ->
-                    println("Processed activity ${key.getActivity()} -> ${value.getCount()}")
+                    println("Processed $countProcess - activity ${key.getActivity()} -> ${value.getCount()}")
                 }
 
         start()
