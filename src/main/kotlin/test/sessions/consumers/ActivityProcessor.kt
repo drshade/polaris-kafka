@@ -18,33 +18,39 @@ fun main(args: Array<String>) {
         val activityTopic = topic<ActivityKey, ActivityValue>("activity", 12, 2)
 
         var countProcess = 0
-        consumeStream(userActivityTopic)
+        listOf(60L) // 5L, 10L,
+                .forEach { rangeInSecs ->
+                    consumeStream(userActivityTopic)
 
-                .groupBy({ _, v ->
-                    countProcess++
-                    v.getActivity()
-                }, Grouped.with(Serdes.String(), userActivityTopic.valueSerde))
+                            .groupBy({ _, v ->
+                                countProcess++
+                                v.getActivity()
+                            }, Grouped.with(Serdes.String(), userActivityTopic.valueSerde))
 
-                .windowedBy(TimeWindows.of(Duration.ofSeconds(60)))
+                            .windowedBy(TimeWindows.of(Duration.ofSeconds(rangeInSecs)))
+                            .count()
+                            // Suppress - we only want closed windows
+                            //
+                            .suppress(Suppressed.untilWindowCloses(Suppressed.BufferConfig.unbounded())) //maxRecords(100)))
 
-                .count()
 
-                .toStream()
+                            .toStream()
 
-                .map { winKey, count ->
-                    KeyValue(
-                            ActivityKey(winKey.key()),
-                            ActivityValue(winKey.key(), mutableListOf(""), count)
-                    )
+                            .map { winKey, count ->
+                                KeyValue(
+                                        ActivityKey(winKey.key()),
+                                        ActivityValue(winKey.key(), mutableListOf(""), count)
+                                )
+                            }
+
+                            .through(activityTopic.topic, activityTopic.producedWith())
+
+                            .foreach { key, value ->
+                                println("Processed $countProcess - activity ${key.getActivity()} -> ${value.getCount()}")
+                            }
+
+                    start()
                 }
-
-                .through(activityTopic.topic, activityTopic.producedWith())
-
-                .foreach { key, value ->
-                    println("Processed $countProcess - activity ${key.getActivity()} -> ${value.getCount()}")
-                }
-
-        start()
     }
 
 }

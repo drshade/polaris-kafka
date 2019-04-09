@@ -21,10 +21,8 @@ fun main(args: Array<String>) {
 
                 .groupBy({ _, _ ->
                     countProcess++
-                    "" // return static => ungrouped
+                    "ALL_ACTIVITIES" // return static => ungrouped
                 }, Grouped.with(Serdes.String(), activityTopic.valueSerde))
-
-                .windowedBy(TimeWindows.of(Duration.ofSeconds(60)))
 
                 .reduce { a, b ->
                     if (a.getCount() > b.getCount()) a
@@ -34,11 +32,11 @@ fun main(args: Array<String>) {
                 .toStream()
 
                 .map { k, v ->
-                    KeyValue(ActivityKey(k.key()),
+                    KeyValue(ActivityKey(k),
                             PopularityValue(
                                     v.getActivity(),
                                     v.getCount(),
-                                    (k.window().end() - k.window().start()) / 1000
+                                    0 // (k.window().end() - k.window().start()) / 1000
                             )
                     )
                 }
