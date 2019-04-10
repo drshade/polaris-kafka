@@ -27,7 +27,7 @@ fun main(args: Array<String>) {
         val userActivityStream = consumeStream(userActivityTopic)
 
         var activityStreams = mutableListOf<KStream<ActivityKey, ActivityValue>>()// mutableListOf<KStream<Windowed<String>, Long>>()
-        listOf(60L) // , 5L, 10L)
+        listOf(60L, 5L, 10L)
                 .forEach { rangeInSecs ->
                     // var countProcess = 0
 
