@@ -24,44 +24,38 @@ fun main(args: Array<String>) {
 
         val popularityTopic = topic<ActivityKey, PopularityValue>("popularity", 4, 1)
 
-        val userActivityStream = consumeStream(userActivityTopic)
-
         var countProcess = 0
-        var listOfStreams = mutableListOf<KStream<ActivityKey, PopularityValue>>()// mutableListOf<KStream<Windowed<String>, Long>>()
+        val userActivityKGroupedStream = consumeStream(userActivityTopic)
+                .groupBy({ _, v ->
+                    countProcess++
+                    v.getActivity()
+                }, Grouped.with(Serdes.String(), userActivityTopic.valueSerde))
+
+        var countProcessB = 0
         listOf(60L, 5L, 10L)
-                .forEach { rangeInSecs ->
-
-                    var popularityStream = userActivityStream
-                            .groupBy({ _, v ->
-                                countProcess++
-                                v.getActivity()
-                            }, Grouped.with(Serdes.String(), userActivityTopic.valueSerde))
-
+                .map { rangeInSecs->
+                    userActivityKGroupedStream
                             .windowedBy(TimeWindows.of(Duration.ofSeconds(rangeInSecs)))
                             .count()
 
                             // Suppress - closed windows only
                             //
-                            .suppress(Suppressed.untilTimeLimit(Duration.ofSeconds(rangeInSecs), Suppressed.BufferConfig.maxRecords(100L)))
+                            .suppress(Suppressed.untilTimeLimit(Duration.ofSeconds(rangeInSecs), Suppressed.BufferConfig.maxRecords(1000L)))
 
                             .toStream()
-
-                            .map { k, v ->
-                                KeyValue(ActivityKey(k.key()),
-                                        PopularityValue(
-                                                k.key(),
-                                                v,
-                                                (k.window().end() - k.window().start())
-                                        )
-                                )
-                            }
-
-                    listOfStreams.add(popularityStream)
                 }
 
-        var countProcessB = 0
-        listOfStreams
                 .reduce { kStreamA, kStreamB -> kStreamA.merge(kStreamB) }
+
+                .map { k, v ->
+                    KeyValue(ActivityKey(k.key()),
+                            PopularityValue(
+                                    k.key(),
+                                    v,
+                                    (k.window().end() - k.window().start())
+                            )
+                    )
+                }
 
                 .groupBy({ _, _ ->
                     countProcessB++
@@ -74,13 +68,12 @@ fun main(args: Array<String>) {
                 }
 
                 .toStream()
-//
-//                .map { k, v -> KeyValue(ActivityKey(k), v) }
-//
-//                .through(popularityTopic.topic, popularityTopic.producedWith())
+
+                .map { k, v -> KeyValue(ActivityKey(k), v) }
+
+                .through(popularityTopic.topic, popularityTopic.producedWith())
 
                 .foreach { _, v ->
-
                     if (v == null)
                         println("Processed $countProcess records; $countProcessB subrecords")
                     else {
@@ -91,5 +84,4 @@ fun main(args: Array<String>) {
 
         start()
     }
-
 }
