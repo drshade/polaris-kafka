@@ -3,13 +3,11 @@ package test.sessions.consumers
 
 import org.apache.kafka.common.serialization.Serdes
 import org.apache.kafka.streams.KeyValue
-import org.apache.kafka.streams.kstream.*
-import org.apache.kafka.streams.kstream.Suppressed.*;
-import org.apache.kafka.streams.kstream.Suppressed.BufferConfig.maxRecords
-
+import org.apache.kafka.streams.kstream.Grouped
+import org.apache.kafka.streams.kstream.Suppressed
+import org.apache.kafka.streams.kstream.TimeWindows
 import polaris.kafka.PolarisKafka
 import polaris.kafka.test.activities.ActivityKey
-import polaris.kafka.test.activities.ActivityValue
 import polaris.kafka.test.activities.PopularityValue
 import polaris.kafka.test.sessions.UserActivityKey
 import polaris.kafka.test.sessions.UserActivityValue
@@ -19,8 +17,6 @@ fun main(args: Array<String>) {
 
     with(PolarisKafka("polaris-kafka-activity-processor")) {
         val userActivityTopic = topic<UserActivityKey, UserActivityValue>("user-activity", 12, 2)
-
-        // val activityTopic = topic<ActivityKey, ActivityValue>("activity", 12, 2)
 
         val popularityTopic = topic<ActivityKey, PopularityValue>("popularity", 4, 1)
 
@@ -46,8 +42,6 @@ fun main(args: Array<String>) {
                 }
 
                 .reduce { kStreamA, kStreamB -> kStreamB.merge(kStreamA) }
-
-
 
                 .map { k, v ->
                     KeyValue(ActivityKey(k.key()),
