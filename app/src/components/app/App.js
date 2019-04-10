@@ -18,11 +18,7 @@ import Receive from '../receive/Receive';
 import ConfirmPayment from '../confirm-payment/ConfirmPayment';
 import AddMoney from '../add-money/AddMoney';
 import PaymentMethod from '../payment-method/PaymentMethod';
-import CreditCard from '../credit-card/CreditCard';
 import NotificationPermission from '../notification-permission/NotificationPermission';
-import ProductCatalogue from '../products-catalogue/ProductCatalogue';
-import ProductDetail from '../product-detail/ProductDetail';
-import CartSummary from '../cart-summary/CartSummary';
 
 export default class App extends Component {
   state = {};
@@ -48,10 +44,6 @@ export default class App extends Component {
             <Route path="/confirm-payment/:reference" render={() => <ConfirmPayment />} />
             <Route path="/add-money" render={() => <AddMoney />} />
             <Route path="/payment-method" render={() => <PaymentMethod />} />
-            <Route path="/credit-card" render={() => <CreditCard />} />
-            <Route path="/products-catalogue/:category" render={ () => <ProductCatalogue/>} />
-            <Route path="/product-detail" render={() => <ProductDetail />} />
-            <Route path="/cart-summary" render={() => <CartSummary />} />
             <Route path="/receive" render={() => <Receive />} />
           </Switch>
         </div>

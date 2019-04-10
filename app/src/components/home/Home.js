@@ -1,6 +1,5 @@
 import React, { Component } from 'react';
 import store from '../../store';
-import { createSelector } from 'reselect';
 import { Link } from 'react-router-dom';
 
 import './Home.css';
@@ -14,22 +13,6 @@ import {
 
 import BottomBar from '../bottom-bar/BottomBar';
 import Wallet from '../wallet/Wallet';
-
-const categoriesSelector = state => state.categories;
-
-const availableCategories = createSelector(
-  categoriesSelector,
-  (categories) => {
-    let subCategories = [];
-    categories.forEach(rootCategory => {
-      rootCategory.children_data.forEach(subCategory => {
-        subCategories.push(subCategory);
-      })
-    });
-    let availableSubCategories = subCategories.filter(subCategory => subCategory.product_count > 0);
-    return availableSubCategories;
-  }
-)
 
 class Home extends Component {
   state = {};
@@ -101,8 +84,7 @@ class Home extends Component {
 function mapStateToProps(state) {
   return {
     ...state.ping,
-    profile: state.user.profile,
-    categories: availableCategories({ categories: state.categories.categories })
+    profile: state.user.profile  
   };
 }
 

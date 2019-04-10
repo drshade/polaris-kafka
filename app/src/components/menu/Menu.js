@@ -69,10 +69,6 @@ class Menu extends Component {
     store.dispatch(goBack());
   }
 
-  navigateCart() {
-    store.dispatch(push('/cart-summary'));
-  }
-
   onFailure(error) {
     console.log(error);
   }
@@ -145,8 +141,7 @@ class Menu extends Component {
 }
 
 function mapStateToProps(state) {
-  return {    
-    totalCartItems: state.catalogue.cart.qty,
+  return {
     isHome: state.navigation.isHome   
   };
 }
