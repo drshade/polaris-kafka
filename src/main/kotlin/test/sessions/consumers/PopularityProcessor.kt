@@ -32,7 +32,7 @@ fun main(args: Array<String>) {
                 }, Grouped.with(Serdes.String(), userActivityTopic.valueSerde))
 
         var countProcessB = 0
-        listOf(60L, 5L, 10L)
+        listOf(5L, 60L, 10L)
                 .map { rangeInSecs->
                     userActivityKGroupedStream
                             .windowedBy(TimeWindows.of(Duration.ofSeconds(rangeInSecs)))
@@ -45,7 +45,9 @@ fun main(args: Array<String>) {
                             .toStream()
                 }
 
-                .reduce { kStreamA, kStreamB -> kStreamA.merge(kStreamB) }
+                .reduce { kStreamA, kStreamB -> kStreamB.merge(kStreamA) }
+
+
 
                 .map { k, v ->
                     KeyValue(ActivityKey(k.key()),
@@ -57,10 +59,11 @@ fun main(args: Array<String>) {
                     )
                 }
 
-                .groupBy({ _, _ ->
+                .groupBy({ k, v ->
                     countProcessB++
-                    "ALL_ACTIVITIES" // return static => ungrouped
-                }, Grouped.with(Serdes.String(), popularityTopic.valueSerde))
+                    v.getSince()
+                }, Grouped.with(Serdes.Long(), popularityTopic.valueSerde))
+                .windowedBy(TimeWindows.of(Duration.ofSeconds(60)))
 
                 .reduce { a, b ->
                     if (a.getCount() > b.getCount()) a
@@ -69,7 +72,7 @@ fun main(args: Array<String>) {
 
                 .toStream()
 
-                .map { k, v -> KeyValue(ActivityKey(k), v) }
+                .map { k, v -> KeyValue(ActivityKey(v.getActivity()), v) }
 
                 .through(popularityTopic.topic, popularityTopic.producedWith())
 
