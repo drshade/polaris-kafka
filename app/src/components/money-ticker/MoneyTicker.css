@@ -7,6 +7,8 @@
     height: auto;
 }
 
+
+
 .money-ticker .value-wrapper,
 .money-ticker .currency {
     display: inline-block;
@@ -22,6 +24,14 @@
     opacity: 1;
     margin-top: -1.3em;
 }
+
+.current-balance span:nth-last-child(-n+3){
+    font-size: .6em;
+} 
+
+.previous-balance span:nth-last-child(-n+3){
+    font-size: .6em;
+} 
 
 .money-ticker .number {
     display: inline-block;

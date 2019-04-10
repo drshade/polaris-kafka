@@ -70,15 +70,15 @@ class Home extends Component {
                 <span>Add Money</span>
               </Link>
               <hr/>
-              <Link to="/scan">
-                <img src="/assets/images/mobile-pay.svg" alt="mobile-pay" />
-                <span>Pay Someone</span>
-              </Link>
-              <hr/>
               <Link to="/receive">
                 <img src="/assets/images/receive.svg" alt="receive" />
                 <span>Receive Money</span>
               </Link>
+              <hr/>
+              <Link to="/scan">
+                <img src="/assets/images/mobile-pay.svg" alt="mobile-pay" />
+                <span>Pay Someone</span>
+              </Link>           
             </div>
           )}
         </div>
