@@ -20,20 +20,20 @@ fun main(args: Array<String>) {
     with(PolarisKafka("polaris-kafka-activity-processor")) {
         val userActivityTopic = topic<UserActivityKey, UserActivityValue>("user-activity", 12, 2)
 
-        val activityTopic = topic<ActivityKey, ActivityValue>("activity", 12, 2)
+        // val activityTopic = topic<ActivityKey, ActivityValue>("activity", 12, 2)
 
-        val popularityTopic = topic<ActivityKey, PopularityValue>("popularity", 12, 1)
+        val popularityTopic = topic<ActivityKey, PopularityValue>("popularity", 4, 1)
 
         val userActivityStream = consumeStream(userActivityTopic)
 
-        var activityStreams = mutableListOf<KStream<ActivityKey, ActivityValue>>()// mutableListOf<KStream<Windowed<String>, Long>>()
+        var countProcess = 0
+        var listOfStreams = mutableListOf<KStream<ActivityKey, PopularityValue>>()// mutableListOf<KStream<Windowed<String>, Long>>()
         listOf(60L, 5L, 10L)
                 .forEach { rangeInSecs ->
-                    // var countProcess = 0
 
-                    var activity = userActivityStream
+                    var popularityStream = userActivityStream
                             .groupBy({ _, v ->
-                                // countProcess++
+                                countProcess++
                                 v.getActivity()
                             }, Grouped.with(Serdes.String(), userActivityTopic.valueSerde))
 
@@ -42,36 +42,31 @@ fun main(args: Array<String>) {
 
                             // Suppress - closed windows only
                             //
-                            .suppress(Suppressed.untilTimeLimit(Duration.ofSeconds(rangeInSecs * 2), Suppressed.BufferConfig.maxRecords(100L)))
+                            .suppress(Suppressed.untilTimeLimit(Duration.ofSeconds(rangeInSecs), Suppressed.BufferConfig.maxRecords(100L)))
 
                             .toStream()
 
-                            .map { winKey, count ->
-                                KeyValue(
-                                        ActivityKey(winKey.key()),
-                                        ActivityValue(winKey.key(), mutableListOf(""), count)
+                            .map { k, v ->
+                                KeyValue(ActivityKey(k.key()),
+                                        PopularityValue(
+                                                k.key(),
+                                                v,
+                                                (k.window().end() - k.window().start())
+                                        )
                                 )
                             }
 
-                    activityStreams.add(activity)
+                    listOfStreams.add(popularityStream)
                 }
 
-        var countProcess = 0
-        activityStreams
+        var countProcessB = 0
+        listOfStreams
                 .reduce { kStreamA, kStreamB -> kStreamA.merge(kStreamB) }
 
-//                .through(activityTopic.topic, activityTopic.producedWith())
-//
-//                .foreach { key, value ->
-//                    // println("range: $rangeInSecs s")
-//                    // println("Processed $countProcess - activity ${key.getActivity()} -> ${value.getCount()}")
-//                    println("Processed - activity ${key.getActivity()} -> ${value.getCount()}")
-//                }
-
                 .groupBy({ _, _ ->
-                    countProcess++
+                    countProcessB++
                     "ALL_ACTIVITIES" // return static => ungrouped
-                }, Grouped.with(Serdes.String(), activityTopic.valueSerde))
+                }, Grouped.with(Serdes.String(), popularityTopic.valueSerde))
 
                 .reduce { a, b ->
                     if (a.getCount() > b.getCount()) a
@@ -79,26 +74,18 @@ fun main(args: Array<String>) {
                 }
 
                 .toStream()
-
-                .map { k, v ->
-                    KeyValue(ActivityKey(k),
-                            PopularityValue(
-                                    v.getActivity(),
-                                    v.getCount(),
-                                    0 // (k.window().end() - k.window().start()) / 1000
-                            )
-                    )
-                }
-
-                .through(popularityTopic.topic, popularityTopic.producedWith())
+//
+//                .map { k, v -> KeyValue(ActivityKey(k), v) }
+//
+//                .through(popularityTopic.topic, popularityTopic.producedWith())
 
                 .foreach { _, v ->
 
                     if (v == null)
-                        println("Processed $countProcess records")
+                        println("Processed $countProcess records; $countProcessB subrecords")
                     else {
                         println("Most popular: (${v.getCount()}) ${v.getActivity()}")
-                        println("Processed $countProcess records; ${v.getSince()}s window")
+                        println("Processed $countProcess records; $countProcessB subrecords; ${v.getSince()}ms window")
                     }
                 }
 
