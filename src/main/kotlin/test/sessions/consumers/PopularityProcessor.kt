@@ -18,7 +18,7 @@ fun main(args: Array<String>) {
     with(PolarisKafka("polaris-kafka-activity-processor")) {
         val userActivityTopic = topic<UserActivityKey, UserActivityValue>("user-activity", 12, 2)
 
-        val popularityTopic = topic<ActivityKey, PopularityValue>("popularity", 4, 1)
+        val popularityTopic = topic<ActivityKey, PopularityValue>("popularity", 12, 2)
 
         var countProcess = 0
         val userActivityKGroupedStream = consumeStream(userActivityTopic)
@@ -31,12 +31,14 @@ fun main(args: Array<String>) {
         listOf(5L, 60L, 10L)
                 .map { rangeInSecs->
                     userActivityKGroupedStream
+
                             .windowedBy(TimeWindows.of(Duration.ofSeconds(rangeInSecs)))
                             .count()
 
                             // Suppress - closed windows only
                             //
-                            .suppress(Suppressed.untilTimeLimit(Duration.ofSeconds(rangeInSecs), Suppressed.BufferConfig.maxRecords(1000L)))
+                            .suppress(Suppressed.untilWindowCloses(Suppressed.BufferConfig.unbounded()))
+                            // .suppress(Suppressed.untilTimeLimit(Duration.ofSeconds(rangeInSecs), Suppressed.BufferConfig.maxRecords(1000L)))
 
                             .toStream()
                 }
@@ -58,11 +60,14 @@ fun main(args: Array<String>) {
                     v.getSince()
                 }, Grouped.with(Serdes.Long(), popularityTopic.valueSerde))
                 .windowedBy(TimeWindows.of(Duration.ofSeconds(60)))
-
                 .reduce { a, b ->
                     if (a.getCount() > b.getCount()) a
                     else b
                 }
+                // Suppress - closed windows only
+                //
+                .suppress(Suppressed.untilWindowCloses(Suppressed.BufferConfig.unbounded()))
+                // .suppress(Suppressed.untilTimeLimit(Duration.ofSeconds(60), Suppressed.BufferConfig.maxRecords(1000L)))
 
                 .toStream()
 
