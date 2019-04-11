@@ -4,10 +4,7 @@ package test.sessions.consumers
 import org.apache.kafka.common.serialization.Serdes
 import org.apache.kafka.streams.KeyValue
 import org.apache.kafka.streams.kstream.Grouped
-import org.apache.kafka.streams.kstream.Suppressed
-import org.apache.kafka.streams.kstream.Suppressed.BufferConfig.maxRecords
 import org.apache.kafka.streams.kstream.Suppressed.BufferConfig.unbounded
-import org.apache.kafka.streams.kstream.Suppressed.untilTimeLimit
 import org.apache.kafka.streams.kstream.Suppressed.untilWindowCloses
 import org.apache.kafka.streams.kstream.TimeWindows
 import polaris.kafka.PolarisKafka
@@ -16,10 +13,13 @@ import polaris.kafka.test.activities.PopularityValue
 import polaris.kafka.test.sessions.UserActivityKey
 import polaris.kafka.test.sessions.UserActivityValue
 import java.time.Duration
+import java.time.Instant
 
 fun main(args: Array<String>) {
 
     with(PolarisKafka("polaris-kafka-activity-processor")) {
+        val nowStartSecs = Instant.now().toEpochMilli() / 1000
+
         val userActivityTopic = topic<UserActivityKey, UserActivityValue>("user-activity", 12, 2)
 
         val popularityTopic = topic<ActivityKey, PopularityValue>("popularity", 12, 2)
@@ -52,13 +52,13 @@ fun main(args: Array<String>) {
                 .map { k, v ->
                     var activity = k.key() +
                             " w[" +
-                            ((k.window().end() - k.window().start())/1000).toString() +
+                            ((k.window().end() - k.window().start()) / 1000).toString() +
                             "s]"
                     KeyValue(ActivityKey(k.key()),
                             PopularityValue(
                                     activity,
                                     v,
-                                    k.window().endTime().epochSecond
+                                    k.window().endTime().epochSecond - nowStartSecs
                             )
                     )
                 }
@@ -67,16 +67,11 @@ fun main(args: Array<String>) {
                     countProcessB++
                     v.getSince()
                 }, Grouped.with(Serdes.Long(), popularityTopic.valueSerde))
-                .windowedBy(TimeWindows.of(Duration.ofSeconds(60)).grace(Duration.ofSeconds(1)))
-                // .windowedBy(TimeWindows.of(Duration.ofSeconds(60)))
+
                 .reduce { a, b ->
                     if (a.getCount() > b.getCount()) a
                     else b
                 }
-                // Suppress - closed windows only
-                //
-                .suppress(untilWindowCloses(unbounded()))
-                // .suppress(untilTimeLimit(Duration.ofSeconds(60), maxRecords(1000L)))
 
                 .toStream()
 
@@ -86,10 +81,10 @@ fun main(args: Array<String>) {
 
                 .foreach { _, v ->
                     if (v == null)
-                        println("Processed $countProcess records; $countProcessB subrecords")
+                        println("Processed $countProcess records; $countProcessB sub-records")
                     else {
                         println("Most popular: ${v.getActivity()} (${v.getCount()})")
-                        println("Processed $countProcess records; $countProcessB subrecords; window end epoch ${v.getSince()}")
+                        println("Processed $countProcess records; $countProcessB sub-records; since ${v.getSince()}")
                     }
                 }
 
