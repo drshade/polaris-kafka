@@ -50,11 +50,15 @@ fun main(args: Array<String>) {
                 .reduce { kStreamA, kStreamB -> kStreamB.merge(kStreamA) }
 
                 .map { k, v ->
+                    var activity = k.key() +
+                            " w[" +
+                            ((k.window().end() - k.window().start())/1000).toString() +
+                            "s]"
                     KeyValue(ActivityKey(k.key()),
                             PopularityValue(
-                                    k.key(),
+                                    activity,
                                     v,
-                                    k.window().startTime().epochSecond
+                                    k.window().endTime().epochSecond
                             )
                     )
                 }
@@ -84,8 +88,8 @@ fun main(args: Array<String>) {
                     if (v == null)
                         println("Processed $countProcess records; $countProcessB subrecords")
                     else {
-                        println("Most popular: (${v.getCount()}) ${v.getActivity()}")
-                        println("Processed $countProcess records; $countProcessB subrecords; rangeOf ${v.getSince()}s window")
+                        println("Most popular: ${v.getActivity()} (${v.getCount()})")
+                        println("Processed $countProcess records; $countProcessB subrecords; window end epoch ${v.getSince()}")
                     }
                 }
 
