@@ -36,7 +36,7 @@ fun main(args: Array<String>) {
                 .map { rangeInSecs ->
                     userActivityKGroupedStream
 
-                            .windowedBy(TimeWindows.of(Duration.ofSeconds(rangeInSecs)).grace(Duration.ofSeconds(1)))
+                            .windowedBy(TimeWindows.of(Duration.ofSeconds(rangeInSecs)).grace(Duration.ofMillis(0)))
                             .count()
 
                             // Suppress - closed windows only
@@ -50,15 +50,16 @@ fun main(args: Array<String>) {
                 .reduce { kStreamA, kStreamB -> kStreamB.merge(kStreamA) }
 
                 .map { k, v ->
-                    var activity = k.key() +
-                            " w[" +
-                            ((k.window().end() - k.window().start()) / 1000).toString() +
-                            "s]"
+                    var activity = "[" +
+                            ((k.window().end() - k.window().start()) / 1000).toString().padStart(2, '0') +
+                            "s] | " +
+                            k.key()
+
                     KeyValue(ActivityKey(k.key()),
                             PopularityValue(
                                     activity,
                                     v,
-                                    k.window().endTime().epochSecond - nowStartSecs
+                                    k.window().endTime().epochSecond
                             )
                     )
                 }
@@ -80,11 +81,10 @@ fun main(args: Array<String>) {
                 .through(popularityTopic.topic, popularityTopic.producedWith())
 
                 .foreach { _, v ->
-                    if (v == null)
-                        println("Processed $countProcess records; $countProcessB sub-records")
-                    else {
-                        println("Most popular: ${v.getActivity()} (${v.getCount()})")
-                        println("Processed $countProcess records; $countProcessB sub-records; since ${v.getSince()}")
+                    if (v != null) {
+                        println(" ttl:${v.getCount().toString().padStart(2, '0')}, win:${v.getActivity()} (records: $countProcess + $countProcessB)")
+                        println("${(v.getSince() - nowStartSecs)}s since start")
+                        println(" ")
                     }
                 }
 
