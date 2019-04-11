@@ -5,8 +5,8 @@
     "type": "record",
     "fields" : [
       {
-        "name" : "principle",
-        "type" : ["null", "string"]
+        "name" : "id",
+        "type" : "string"
       }
     ]
   },
@@ -15,6 +15,10 @@
     "name": "ActionValue",
     "type": "record",
     "fields" : [
+      {
+        "name" : "principal",
+        "type" : ["null", "string"]
+      },
       {
         "name" : "resource",
         "type" : "string"

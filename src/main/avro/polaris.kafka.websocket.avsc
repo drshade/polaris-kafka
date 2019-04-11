@@ -40,6 +40,10 @@
                 "type" : "string"
               },
               {
+                "name" : "principal",
+                "type" : ["null", "string"]
+              },
+              {
                 "name" : "topic",
                 "type" : "string"
               },
@@ -57,24 +61,6 @@
       {
         "name" : "data",
         "type" : ["null", "string"]
-      }
-    ]
-  },
-  {
-    "namespace": "polaris.kafka.websocket",
-    "name": "WebsocketByPrincipalValue",
-    "type": "record",
-    "fields": [
-      {
-        "name" : "principal",
-        "type" : "string"
-      },
-      {
-        "name" : "ids",
-        "type" : {
-          "type": "array",
-          "items": "string"
-        }
       }
     ]
   }

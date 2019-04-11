@@ -83,12 +83,6 @@ class WebsocketServerConfigurator(
     }
 }
 
-enum class CAST {
-    UNICAST,
-    MULTICAST,
-    BROADCAST
-}
-
 @ServerEndpoint(value = "")
 class WebsocketServerEndpointHandler(private val websocketTopic : SafeTopic<WebsocketEventKey, WebsocketEventValue>,
                                      private val authPlugin : ((body : String) -> (String?))? = null) {
@@ -111,103 +105,21 @@ class WebsocketServerEndpointHandler(private val websocketTopic : SafeTopic<Webs
         websocketTopic.startProducer()
         producer = websocketTopic.producer!!
 
-        // Setup the serdes
-        //
-        val websocketByPrincipalValueSerde = processor.serdeFor<WebsocketByPrincipalValue>()
-        val websocketEventValueSerde = processor.serdeFor<WebsocketEventValue>()
-
-        // Materialize all currently connected websockets (for broadcasting)
-        //
-        val consumer = processor.consumeStream(websocketTopic)
-        consumer
-            .map { key, value ->
-                KeyValue(key.getId(), value)
-            }
-            .groupByKey(Grouped.with(Serdes.String(), websocketEventValueSerde))
-            .aggregate(
-                { null },
-                { key, value, accum : String? ->
-                    //println("WebsocketsConnected Key: $key Value: $value Accum: $accum")
-                    if (value.getState() != "CLOSED" && value.getState() != "ERROR") {
-                        "CONNECTED"
-                    }
-                    else {
-                        // Remove all references to this websocket id
-                        //
-                        null
-                    }
-                },
-                Materialized.`as`<String, String?, KeyValueStore<Bytes, ByteArray>>("WebsocketsConnected")
-                    .withKeySerde(Serdes.String())
-                    .withValueSerde(Serdes.String())
-            )
-            .toStream()
-            .foreach { key, value ->
-                println("WebsocketsConnected $key -> $value")
-            }
-
-        // Materialize currently logged in users by principal
-        //
-        val connectedAuthenticatedWebsockets =
-            consumer
-                .filter { key, value ->
-                    value.getPrincipal() != null
-                }
-                .map { key, value ->
-                    KeyValue(value.getPrincipal(), value)
-                }
-                .groupByKey(Grouped.with(Serdes.String(), websocketEventValueSerde))
-                .aggregate(
-                    { WebsocketByPrincipalValue("", mutableListOf()) },
-                    { key, value, accum : WebsocketByPrincipalValue ->
-                        //println("WebsocketsByPrinciple Key: $key Value: $value Accum: $accum")
-                        if (value.getState() != "CLOSED" && value.getState() != "ERROR") {
-                            // Add this websocket id if it doesn't already exist
-                            //
-                            if (!accum.getIds().contains(value.getId())) {
-                                WebsocketByPrincipalValue(key, accum.getIds() + value.getId())
-                            }
-                            // Otherwise do nothing
-                            //
-                            else {
-                                WebsocketByPrincipalValue(key, accum.getIds())
-                            }
-                        }
-                        else {
-                            // Remove all references to this websocket id
-                            //
-                            WebsocketByPrincipalValue(key, accum.getIds().filter { e -> e != value.getId() })
-                        }
-                    },
-                    Materialized.`as`<String, WebsocketByPrincipalValue, KeyValueStore<Bytes, ByteArray>>("WebsocketsByPrinciple")
-                        .withKeySerde(Serdes.String())
-                        .withValueSerde(websocketByPrincipalValueSerde)
-                )
-//                .toStream()
-//                .foreach { key, value ->
-//                    println("WebsocketsByPrinciple $key -> $value")
-//                }
-
         // How to dispatch different responses
         //
-        consumer
-            .filter { key, value -> value.getState() == CAST.UNICAST.name }
+        processor.consumeStream(websocketTopic)
+            .filter { key, value -> value.getState() == "SENT" }
             .foreach { _, value ->
                 sendToWid(value.getReplyPath().getId(), value.getData())
             }
 
-        consumer
-            .filter { key, value -> value.getState() == CAST.BROADCAST.name }
-            .join (
-                connectedAuthenticatedWebsockets,
-                { v1, v2 ->
-                    v2
-                },
-                Joined.with())
-
         processor.start { topicPartitionAssignment ->
             println("Assigned partitions: $topicPartitionAssignment")
             partitions = topicPartitionAssignment[websocketTopic.topic]
+
+            // TODO: It could be that we need to emit a "PARTITIONS_REASSIGNED" event to
+            // update each connected websocket's replyPath back to this one
+            //
         }
     }
 
@@ -223,10 +135,10 @@ class WebsocketServerEndpointHandler(private val websocketTopic : SafeTopic<Webs
         session.maxBinaryMessageBufferSize = 10 * 1024 * 1024
         session.maxTextMessageBufferSize = 10 * 1024 * 1024
 
-        // OPENED event
+        // OPENED event - no principal assigned (because it's just opened and no auth provided)
         //
         val key = WebsocketEventKey(wid)
-        val value = WebsocketEventValue(wid, "OPENED", null, getReplyPath(wid), null)
+        val value = WebsocketEventValue(wid, "OPENED", null, getReplyPath(wid, null), null)
         val record = ProducerRecord(websocketTopic.topic, key, value)
         producer.send(record) { _, exception ->
             if (exception != null) {
@@ -236,20 +148,20 @@ class WebsocketServerEndpointHandler(private val websocketTopic : SafeTopic<Webs
         println("Opened ${session.id} (wid: $wid)")
     }
 
-    fun getReplyPath(wid : String) : ReplyPath? {
+    fun getReplyPath(wid : String, principal : String?) : ReplyPath? {
         if (partitions != null) {
             if (!partitions!!.isEmpty()) {
-                return ReplyPath(wid, websocketTopic.topic, partitions!!)
+                return ReplyPath(wid, principal, websocketTopic.topic, partitions!!)
             }
         }
         return null
     }
 
-    fun emitEvent(session : Session, state : String, principle : String?, data : String?) {
+    fun emitEvent(session : Session, state : String, principal : String?, data : String?) {
         val wid = sessionsToWid[session.id]
         if (wid != null) {
             val key = WebsocketEventKey(wid)
-            val value = WebsocketEventValue(wid, state, principle, getReplyPath(wid), data)
+            val value = WebsocketEventValue(wid, state, principal, getReplyPath(wid, principal), data)
             val record = ProducerRecord(websocketTopic.topic, key, value)
             producer.send(record) { _, exception ->
                 if (exception != null) {

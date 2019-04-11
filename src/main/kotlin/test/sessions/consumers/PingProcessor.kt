@@ -24,14 +24,14 @@ fun main(args : Array<String>) {
         pingStream
             .filter { key, value -> value.getAction() == "PING" }
             .mapValues { key, value ->
-                ActionValue("TEST", "PONG", null)
+                ActionValue(value.getPrincipal(), "TEST", "PONG", null)
             }
             .to(pong.topic, pong.producedWith())
 
         pingStream
             .filter { key, value -> value.getAction() == "BIGPING" }
             .mapValues { key, value ->
-                ActionValue("TEST", "BIGPONG", null)
+                ActionValue(value.getPrincipal(), "TEST", "BIGPONG", null)
             }
             .to(pong.topic, pong.producedWith())
 

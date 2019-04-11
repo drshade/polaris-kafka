@@ -11,6 +11,7 @@ import org.apache.kafka.streams.kstream.TransformerSupplier
 import org.apache.kafka.streams.processor.Processor
 import org.apache.kafka.streams.processor.ProcessorContext
 import org.apache.kafka.streams.processor.ProcessorSupplier
+import org.apache.kafka.streams.processor.To
 import polaris.kafka.PolarisKafka
 import polaris.kafka.SafeTopic
 import polaris.kafka.actionrouter.ActionValue
@@ -20,6 +21,12 @@ import java.nio.ByteBuffer
 val gson = Gson()
 
 const val REPLYPATH_HEADER = "polaris-kafka-replyPath"
+
+enum class CAST {
+    UNICAST,
+    MULTICAST,
+    BROADCAST
+}
 
 class TrackAndTransformToAction : Transformer<WebsocketEventKey?, WebsocketEventValue?, KeyValue<ActionKey?, ActionValue?>> {
     private var context : ProcessorContext? = null
@@ -64,7 +71,7 @@ class TrackAndTransformFromAction (private val cast : CAST) : Transformer<Action
         this.context = context
     }
 
-    override fun transform(key : ActionKey?, value : ActionValue?) : KeyValue<WebsocketEventKey?, WebsocketEventValue?> {
+    override fun transform(key : ActionKey?, value : ActionValue?) : KeyValue<WebsocketEventKey?, WebsocketEventValue?>? {
         //println("TrackAndTransformFromAction.transform() called")
         return if (key != null && value != null) {
 
@@ -74,18 +81,35 @@ class TrackAndTransformFromAction (private val cast : CAST) : Transformer<Action
             return if (replyPathHeader != null) {
                 val replyPath = ReplyPath.fromByteBuffer(ByteBuffer.wrap(replyPathHeader.value()))
 
-                val websocketEventKey = WebsocketEventKey(replyPath.getId())
-                val websocketEventValue = WebsocketEventValue(replyPath.getId(), cast.name, key.getPrinciple(), replyPath, gson.toJson(value))
+                when (cast) {
+                    CAST.UNICAST -> {
+                        val websocketEventKey = WebsocketEventKey(replyPath.getId())
+                        val websocketEventValue = WebsocketEventValue(replyPath.getId(), "SENT", replyPath.getPrincipal(), replyPath, gson.toJson(value))
 
-                KeyValue(websocketEventKey, websocketEventValue)
+                        context!!.forward(websocketEventKey, websocketEventValue)
+                    }
+                    CAST.BROADCAST -> {
+                        (1..10).forEach { _ ->
+                            val websocketEventKey = WebsocketEventKey(replyPath.getId())
+                            val websocketEventValue = WebsocketEventValue(replyPath.getId(), "SENT", replyPath.getPrincipal(), replyPath, gson.toJson(value))
+
+                            context!!.forward(websocketEventKey, websocketEventValue, To.child("blah"))
+                        }
+                    }
+                    CAST.MULTICAST -> {
+
+                    }
+                }
+
+                null
             }
             else {
                 // Can't really route a record with no reply path
                 //
-                KeyValue(null, null)
+                null
             }
         } else {
-            KeyValue(null, null)
+            null
         }
     }
 
