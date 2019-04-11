@@ -5,6 +5,10 @@ import org.apache.kafka.common.serialization.Serdes
 import org.apache.kafka.streams.KeyValue
 import org.apache.kafka.streams.kstream.Grouped
 import org.apache.kafka.streams.kstream.Suppressed
+import org.apache.kafka.streams.kstream.Suppressed.BufferConfig.maxRecords
+import org.apache.kafka.streams.kstream.Suppressed.BufferConfig.unbounded
+import org.apache.kafka.streams.kstream.Suppressed.untilTimeLimit
+import org.apache.kafka.streams.kstream.Suppressed.untilWindowCloses
 import org.apache.kafka.streams.kstream.TimeWindows
 import polaris.kafka.PolarisKafka
 import polaris.kafka.test.activities.ActivityKey
@@ -28,17 +32,17 @@ fun main(args: Array<String>) {
                 }, Grouped.with(Serdes.String(), userActivityTopic.valueSerde))
 
         var countProcessB = 0
-        listOf(5L, 60L, 10L)
-                .map { rangeInSecs->
+        listOf(60L, 10L, 5L)
+                .map { rangeInSecs ->
                     userActivityKGroupedStream
 
-                            .windowedBy(TimeWindows.of(Duration.ofSeconds(rangeInSecs)))
+                            .windowedBy(TimeWindows.of(Duration.ofSeconds(rangeInSecs)).grace(Duration.ofSeconds(1)))
                             .count()
 
                             // Suppress - closed windows only
                             //
-                            .suppress(Suppressed.untilWindowCloses(Suppressed.BufferConfig.unbounded()))
-                            // .suppress(Suppressed.untilTimeLimit(Duration.ofSeconds(rangeInSecs), Suppressed.BufferConfig.maxRecords(1000L)))
+                            .suppress(untilWindowCloses(unbounded()))
+                            // .suppress(untilTimeLimit(Duration.ofSeconds(rangeInSecs), maxRecords(1000L)))
 
                             .toStream()
                 }
@@ -50,28 +54,29 @@ fun main(args: Array<String>) {
                             PopularityValue(
                                     k.key(),
                                     v,
-                                    (k.window().end() - k.window().start())
+                                    k.window().startTime().epochSecond
                             )
                     )
                 }
 
-                .groupBy({ k, v ->
+                .groupBy({ _, v ->
                     countProcessB++
                     v.getSince()
                 }, Grouped.with(Serdes.Long(), popularityTopic.valueSerde))
-                .windowedBy(TimeWindows.of(Duration.ofSeconds(60)))
+                .windowedBy(TimeWindows.of(Duration.ofSeconds(60)).grace(Duration.ofSeconds(1)))
+                // .windowedBy(TimeWindows.of(Duration.ofSeconds(60)))
                 .reduce { a, b ->
                     if (a.getCount() > b.getCount()) a
                     else b
                 }
                 // Suppress - closed windows only
                 //
-                .suppress(Suppressed.untilWindowCloses(Suppressed.BufferConfig.unbounded()))
-                // .suppress(Suppressed.untilTimeLimit(Duration.ofSeconds(60), Suppressed.BufferConfig.maxRecords(1000L)))
+                .suppress(untilWindowCloses(unbounded()))
+                // .suppress(untilTimeLimit(Duration.ofSeconds(60), maxRecords(1000L)))
 
                 .toStream()
 
-                .map { k, v -> KeyValue(ActivityKey(v.getActivity()), v) }
+                .map { _, v -> KeyValue(ActivityKey(v.getActivity()), v) }
 
                 .through(popularityTopic.topic, popularityTopic.producedWith())
 
@@ -80,7 +85,7 @@ fun main(args: Array<String>) {
                         println("Processed $countProcess records; $countProcessB subrecords")
                     else {
                         println("Most popular: (${v.getCount()}) ${v.getActivity()}")
-                        println("Processed $countProcess records; $countProcessB subrecords; ${v.getSince()}ms window")
+                        println("Processed $countProcess records; $countProcessB subrecords; rangeOf ${v.getSince()}s window")
                     }
                 }
 
