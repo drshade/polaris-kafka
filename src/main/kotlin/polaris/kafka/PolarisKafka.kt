@@ -164,23 +164,30 @@ class PolarisKafka {
         streams?.setStateListener { newState, oldState ->
             println("State changed from $oldState to $newState")
             val partitionAssignment = mutableMapOf<String, MutableList<Int>>()
-            streams?.localThreadsMetadata()?.forEach { metadata ->
-                metadata.activeTasks().forEach { task ->
+            try {
+                streams?.localThreadsMetadata()?.forEach { metadata ->
+                    metadata.activeTasks().forEach { task ->
 
-                    task.topicPartitions().forEach { topicPartition ->
-                        println("Task: ${task.taskId()} Topic: ${topicPartition.topic()} Partition: ${topicPartition.partition()}")
-                        if (!partitionAssignment.containsKey(topicPartition.topic())) {
-                            partitionAssignment[topicPartition.topic()] = mutableListOf()
+                        task.topicPartitions().forEach { topicPartition ->
+                            println("Task: ${task.taskId()} Topic: ${topicPartition.topic()} Partition: ${topicPartition.partition()}")
+                            if (!partitionAssignment.containsKey(topicPartition.topic())) {
+                                partitionAssignment[topicPartition.topic()] = mutableListOf()
+                            }
+                            partitionAssignment[topicPartition.topic()]!!.add(topicPartition.partition())
                         }
-                        partitionAssignment[topicPartition.topic()]!!.add(topicPartition.partition())
                     }
                 }
-            }
 
-            // Notify the consumer that partitions and topics might have changed
-            //
-            if (partitionsAssignedToTopic != null) {
-                partitionsAssignedToTopic(partitionAssignment)
+                // Notify the consumer that partitions and topics might have changed
+                //
+                if (partitionsAssignedToTopic != null) {
+                    partitionsAssignedToTopic(partitionAssignment)
+                }
+            }
+            catch (e : IllegalStateException) {
+                // Might not be running
+                //
+                println("Failed while interrogating local threads metadata: ${e.message}")
             }
         }
 

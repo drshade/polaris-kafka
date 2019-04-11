@@ -143,7 +143,10 @@ class ActionRouter(private val websocketTopic: SafeTopic<WebsocketEventKey, Webs
         .filter { key, value -> key != null && value != null }
         .map { key, value -> KeyValue(key!!, value!!) }
         .foreach { key, value ->
-            val record = ProducerRecord(value.getReplyPath().getTopic(), value.getReplyPath().getPartition(), key, value)
+            // Randomly get one of the partitions on the replyPath
+            //
+            val partition = value.getReplyPath().getPartitions().shuffled()[0]
+            val record = ProducerRecord(value.getReplyPath().getTopic(), partition, key, value)
             websocketProducer.send(record) { _, exception ->
                 if (exception != null) {
                     println(exception.toString())
