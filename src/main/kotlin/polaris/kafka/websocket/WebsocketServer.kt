@@ -145,6 +145,11 @@ class WebsocketServerEndpointHandler(private val websocketTopic : SafeTopic<Webs
                 println(exception.toString())
             }
         }
+
+        // Send the websocket back his id (for troubleshooting really)
+        //
+        send(session.id, "{\"resource\": \"CLIENT\", \"action\": \"CONNECTED\", \"data\":{\"id\": \"$wid\"}}")
+
         println("Opened ${session.id} (wid: $wid)")
     }
 

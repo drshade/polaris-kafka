@@ -3,15 +3,21 @@ package polaris.kafka.websocket
 import com.google.gson.Gson
 import org.apache.avro.specific.SpecificRecord
 import org.apache.kafka.clients.producer.KafkaProducer
+import org.apache.kafka.clients.producer.Partitioner
 import org.apache.kafka.clients.producer.ProducerRecord
+import org.apache.kafka.clients.producer.internals.DefaultPartitioner
+import org.apache.kafka.common.Cluster
+import org.apache.kafka.common.serialization.Serdes
+import org.apache.kafka.common.utils.Bytes
 import org.apache.kafka.streams.KeyValue
-import org.apache.kafka.streams.kstream.KStream
-import org.apache.kafka.streams.kstream.Transformer
-import org.apache.kafka.streams.kstream.TransformerSupplier
+import org.apache.kafka.streams.kstream.*
 import org.apache.kafka.streams.processor.Processor
 import org.apache.kafka.streams.processor.ProcessorContext
 import org.apache.kafka.streams.processor.ProcessorSupplier
+import org.apache.kafka.streams.processor.StreamPartitioner
 import org.apache.kafka.streams.processor.To
+import org.apache.kafka.streams.state.KeyValueStore
+import org.apache.kafka.streams.state.QueryableStoreTypes
 import polaris.kafka.PolarisKafka
 import polaris.kafka.SafeTopic
 import polaris.kafka.actionrouter.ActionValue
@@ -63,7 +69,7 @@ class TrackAndTransformToAction : Transformer<WebsocketEventKey?, WebsocketEvent
     }
 }
 
-class TrackAndTransformFromAction (private val cast : CAST) : Transformer<ActionKey?, ActionValue?, KeyValue<WebsocketEventKey?, WebsocketEventValue?>> {
+class TrackAndTransformFromAction (private val polarisKafka : PolarisKafka, private val cast : CAST) : Transformer<ActionKey?, ActionValue?, KeyValue<WebsocketEventKey?, WebsocketEventValue?>> {
     private var context : ProcessorContext? = null
 
     override fun init(context : ProcessorContext?) {
@@ -89,11 +95,18 @@ class TrackAndTransformFromAction (private val cast : CAST) : Transformer<Action
                         context!!.forward(websocketEventKey, websocketEventValue)
                     }
                     CAST.BROADCAST -> {
-                        (1..10).forEach { _ ->
-                            val websocketEventKey = WebsocketEventKey(replyPath.getId())
-                            val websocketEventValue = WebsocketEventValue(replyPath.getId(), "SENT", replyPath.getPrincipal(), replyPath, gson.toJson(value))
+                        // Fan out to every connected socket
+                        //
+                        val websocketsConnectedStore = polarisKafka.streams?.store("WebsocketsConnectedGlobal",
+                            QueryableStoreTypes.keyValueStore<String, ReplyPath>())
+                        websocketsConnectedStore?.all()?.forEach { websocket ->
 
-                            context!!.forward(websocketEventKey, websocketEventValue, To.child("blah"))
+                            println("Fanning out to ${websocket.value.getId()} (${websocket.value.getTopic()} ${websocket.value.getPartitions()})")
+
+                            val websocketEventKey = WebsocketEventKey(websocket.value.getId())
+                            val websocketEventValue = WebsocketEventValue(websocket.value.getId(), "SENT", websocket.value.getPrincipal(), websocket.value, gson.toJson(value))
+
+                            context!!.forward(websocketEventKey, websocketEventValue)
                         }
                     }
                     CAST.MULTICAST -> {
@@ -132,6 +145,49 @@ class ActionRouter(private val websocketTopic: SafeTopic<WebsocketEventKey, Webs
         websocketStream = polarisKafka.consumeStream(websocketTopic)
         websocketTopic.startProducer()
         websocketProducer = websocketTopic.producer!!
+
+        val websocketEventValueSerde = polarisKafka.serdeFor<WebsocketEventValue>()
+        val replyPathSerde = polarisKafka.serdeFor<ReplyPath>()
+
+        // Tracking only connected sockets
+        //
+        websocketStream
+            .filter { key, value ->
+                value.getState() != "SENT"
+            }
+            .map { key, value ->
+                KeyValue(key.getId(), value)
+            }
+            .groupByKey(Grouped.with(Serdes.String(), websocketEventValueSerde))
+            .aggregate(
+                { null },
+                { key, value, accum : ReplyPath? ->
+                    //println("WebsocketsConnected Key: $key Value: $value Accum: $accum")
+                    if (value.getState() != "CLOSED" && value.getState() != "ERROR") {
+                        println("WebsocketsConnected Key: $key ADDED Value: $value")
+                        value.getReplyPath()
+                    }
+                    else {
+                        // Remove all references to this websocket id
+                        //
+                        println("WebsocketsConnected Key: $key REMOVED")
+                        null
+                    }
+                },
+                Materialized.`as`<String, ReplyPath?, KeyValueStore<Bytes, ByteArray>>("WebsocketsConnectedLocal")
+                    .withCachingDisabled()
+                    .withKeySerde(Serdes.String())
+                    .withValueSerde(replyPathSerde)
+            )
+            .toStream()
+            .to("websocket-connected-sockets", Produced.with(Serdes.String(), replyPathSerde))
+
+        // Make this local stores global (because we may need to broadcast to all)
+        //
+        polarisKafka.streamsBuilder.globalTable<String, ReplyPath>("websocket-connected-sockets",
+            Materialized.`as`<String, ReplyPath, KeyValueStore<Bytes, ByteArray>>("WebsocketsConnectedGlobal")
+            .withKeySerde(Serdes.String())
+            .withValueSerde(replyPathSerde))
     }
 
     fun start () {
@@ -162,23 +218,28 @@ class ActionRouter(private val websocketTopic: SafeTopic<WebsocketEventKey, Webs
             value?.getResource() == matchResource && value.getAction() == matchAction
         }
         .transform(TransformerSupplier<ActionKey?, ActionValue?, KeyValue<WebsocketEventKey?, WebsocketEventValue?>>{
-            TrackAndTransformFromAction(cast)
+            TrackAndTransformFromAction(polarisKafka, cast)
         })
         .filter { key, value -> key != null && value != null }
         .map { key, value -> KeyValue(key!!, value!!) }
-        .foreach { key, value ->
-            // Randomly get one of the partitions on the replyPath
+        .to(websocketTopic.topic, Produced.with(websocketTopic.keySerde, websocketTopic.valueSerde) { topic, key, value, numPartitions ->
+            // Determine the partition from the replyPath
             //
-            val partition = value.getReplyPath().getPartitions().shuffled()[0]
-            val record = ProducerRecord(value.getReplyPath().getTopic(), partition, key, value)
-            websocketProducer.send(record) { _, exception ->
-                if (exception != null) {
-                    println(exception.toString())
-                } else {
-                    println("Produced message - ${record.value()}")
-                }
-            }
-        }
+            value.getReplyPath().getPartitions().shuffled()[0]
+        })
+//        .foreach { key, value ->
+//            // Randomly get one of the partitions on the replyPath
+//            //
+//            val partition = value.getReplyPath().getPartitions().shuffled()[0]
+//            val record = ProducerRecord(value.getReplyPath().getTopic(), partition, key, value)
+//            websocketProducer.send(record) { _, exception ->
+//                if (exception != null) {
+//                    println(exception.toString())
+//                } else {
+//                    println("Produced message - ${record.value()}")
+//                }
+//            }
+//        }
         //.to(websocketTopic.topic, websocketTopic.producedWith())
     }
 

@@ -11,9 +11,12 @@ ws = new WebSocket do
 		rejectUnauthorized: false
 
 ws.on 'open', ->
-	for i from 0 to 0
-		ws |> ping
-		ws |> bigping
+	setInterval do
+		-> 
+			for i from 0 to 0
+				ws |> ping
+				ws |> bigping
+		1000
 	return
 	setTimeout do
 		-> ws.close()
