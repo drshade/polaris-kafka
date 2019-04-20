@@ -10,6 +10,7 @@ import org.apache.kafka.common.Cluster
 import org.apache.kafka.common.serialization.Serdes
 import org.apache.kafka.common.utils.Bytes
 import org.apache.kafka.streams.KeyValue
+import org.apache.kafka.streams.errors.InvalidStateStoreException
 import org.apache.kafka.streams.kstream.*
 import org.apache.kafka.streams.processor.Processor
 import org.apache.kafka.streams.processor.ProcessorContext
@@ -18,11 +19,13 @@ import org.apache.kafka.streams.processor.StreamPartitioner
 import org.apache.kafka.streams.processor.To
 import org.apache.kafka.streams.state.KeyValueStore
 import org.apache.kafka.streams.state.QueryableStoreTypes
+import org.apache.kafka.streams.state.WindowStore
 import polaris.kafka.PolarisKafka
 import polaris.kafka.SafeTopic
 import polaris.kafka.actionrouter.ActionValue
 import polaris.kafka.actionrouter.ActionKey
 import java.nio.ByteBuffer
+import java.time.Duration
 
 val gson = Gson()
 
@@ -97,20 +100,51 @@ class TrackAndTransformFromAction (private val polarisKafka : PolarisKafka, priv
                     CAST.BROADCAST -> {
                         // Fan out to every connected socket
                         //
-                        val websocketsConnectedStore = polarisKafka.streams?.store("WebsocketsConnectedGlobal",
-                            QueryableStoreTypes.keyValueStore<String, ReplyPath>())
-                        websocketsConnectedStore?.all()?.forEach { websocket ->
+                        try {
+                            val websocketsConnectedStore = polarisKafka.streams?.store("WebsocketsConnectedGlobal",
+                                QueryableStoreTypes.keyValueStore<String, ReplyPath>())
+                            println("WebsocketsConnectedGlobal has ${websocketsConnectedStore?.approximateNumEntries()} approx entries")
+                            websocketsConnectedStore?.all()?.forEach { websocket ->
 
-                            println("Fanning out to ${websocket.value.getId()} (${websocket.value.getTopic()} ${websocket.value.getPartitions()})")
+                                println("Fanning out to ${websocket.value.getId()} (${websocket.value.getTopic()} ${websocket.value.getPartitions()})")
 
-                            val websocketEventKey = WebsocketEventKey(websocket.value.getId())
-                            val websocketEventValue = WebsocketEventValue(websocket.value.getId(), "SENT", websocket.value.getPrincipal(), websocket.value, gson.toJson(value))
+                                val websocketEventKey = WebsocketEventKey(websocket.value.getId())
+                                val websocketEventValue = WebsocketEventValue(websocket.value.getId(), "SENT", websocket.value.getPrincipal(), websocket.value, gson.toJson(value))
 
-                            context!!.forward(websocketEventKey, websocketEventValue)
+                                context!!.forward(websocketEventKey, websocketEventValue)
+                            }
+                        }
+                        catch (e : InvalidStateStoreException) {
+                            // State store might not be open (it's OK - just ignore for now in this use-case)
+                            //
+                            println(e)
                         }
                     }
                     CAST.MULTICAST -> {
+                        // Fan out to every connected socket which has the same principal
+                        // TBD - this is very inefficient (as bad as broadcasting) should be maybe better
+                        //
+                        try {
+                            val websocketsConnectedStore = polarisKafka.streams?.store("WebsocketsConnectedGlobal",
+                                QueryableStoreTypes.keyValueStore<String, ReplyPath>())
+                            println("WebsocketsConnectedGlobal has ${websocketsConnectedStore?.approximateNumEntries()} approx entries")
+                            websocketsConnectedStore?.all()?.forEach { websocket ->
 
+                                if (websocket.value.getPrincipal() == value.getPrincipal()) {
+                                    println("Principal fanning out to ${websocket.value.getId()} (${websocket.value.getTopic()} ${websocket.value.getPartitions()})")
+
+                                    val websocketEventKey = WebsocketEventKey(websocket.value.getId())
+                                    val websocketEventValue = WebsocketEventValue(websocket.value.getId(), "SENT", websocket.value.getPrincipal(), websocket.value, gson.toJson(value))
+
+                                    context!!.forward(websocketEventKey, websocketEventValue)
+                                }
+                            }
+                        }
+                        catch (e : InvalidStateStoreException) {
+                            // State store might not be open (it's OK - just ignore for now in this use-case)
+                            //
+                            println(e)
+                        }
                     }
                 }
 
@@ -161,7 +195,7 @@ class ActionRouter(private val websocketTopic: SafeTopic<WebsocketEventKey, Webs
             .groupByKey(Grouped.with(Serdes.String(), websocketEventValueSerde))
             .aggregate(
                 { null },
-                { key, value, accum : ReplyPath? ->
+                { key : String, value : WebsocketEventValue, accum : ReplyPath? ->
                     //println("WebsocketsConnected Key: $key Value: $value Accum: $accum")
                     if (value.getState() != "CLOSED" && value.getState() != "ERROR") {
                         println("WebsocketsConnected Key: $key ADDED Value: $value")
@@ -184,6 +218,7 @@ class ActionRouter(private val websocketTopic: SafeTopic<WebsocketEventKey, Webs
 
         // Make this local stores global (because we may need to broadcast to all)
         //
+        polarisKafka.createTopicIfNotExist("websocket-connected-sockets", 12, 2)
         polarisKafka.streamsBuilder.globalTable<String, ReplyPath>("websocket-connected-sockets",
             Materialized.`as`<String, ReplyPath, KeyValueStore<Bytes, ByteArray>>("WebsocketsConnectedGlobal")
             .withKeySerde(Serdes.String())

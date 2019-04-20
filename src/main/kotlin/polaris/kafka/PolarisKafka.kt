@@ -80,6 +80,12 @@ class PolarisKafka {
             throw InvalidParameterException("Missing environment variable '$KAFKA_SCHEMA_REGISTRY_URL_ENVVAR'")
         }
 
+        // Fix checkpoint not found issue (multiple stream processor processes hitting the
+        // same /tmp/kafka-streams folder
+        //
+        val pid = ProcessHandle.current().pid()
+        properties[StreamsConfig.STATE_DIR_CONFIG] = "/tmp/kafka-streams-$pid"
+
         properties[StreamsConfig.APPLICATION_ID_CONFIG] = applicationId
         properties[StreamsConfig.CLIENT_ID_CONFIG] = "$applicationId-client"
         properties[StreamsConfig.BOOTSTRAP_SERVERS_CONFIG] = kafka_bootstrap_servers
@@ -114,6 +120,25 @@ class PolarisKafka {
         return valueSerde
     }
 
+    fun createTopicIfNotExist(name : String, partitions : Int, replicas : Int) {
+        val result = adminClient.createTopics(Arrays.asList(
+            NewTopic(name, partitions, replicas.toShort())
+        ))
+        try {
+            result.all().get(60, TimeUnit.SECONDS)
+        } catch (e: ExecutionException) {
+            if (e.cause is TopicExistsException) {
+                println(e.message)
+            }
+            else if (e.cause is InvalidReplicationFactorException) {
+                createTopicIfNotExist(name, partitions, 1)
+            }
+            else {
+                throw e
+            }
+        }
+    }
+
     fun <K : SpecificRecord, V : SpecificRecord>topic(
         name : String,
         partitions : Int,
@@ -122,22 +147,7 @@ class PolarisKafka {
         // Ensure the topic exists
         //
         if (createIfNotExist) {
-            val result = adminClient.createTopics(Arrays.asList(
-                NewTopic(name, partitions, replicas.toShort())
-            ))
-            try {
-                result.all().get(60, TimeUnit.SECONDS)
-            } catch (e: ExecutionException) {
-                if (e.cause is TopicExistsException) {
-                    println(e.message)
-                }
-                else if (e.cause is InvalidReplicationFactorException) {
-                    topic<K, V>(name, partitions, 1, createIfNotExist)
-                }
-                else {
-                    throw e
-                }
-            }
+            createTopicIfNotExist(name, partitions, replicas)
         }
 
         // Configure the serdes
