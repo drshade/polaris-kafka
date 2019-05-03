@@ -1,18 +1,19 @@
-import React, { Component } from 'react';
-import store from '../../store';
-import { Link } from 'react-router-dom';
+import React, { Component } from "react";
+import store from "../../store";
+import { Link } from "react-router-dom";
 
-import './Home.css';
+import "./Home.css";
 
-import { toggleHome } from '../../actions/navigation.toggleHome.action';
-import { connect } from 'react-redux';
+import { toggleHome } from "../../actions/navigation.toggleHome.action";
+import { connect } from "react-redux";
 
-import {
-  Button
-} from '@material-ui/core';
+import { Button } from "@material-ui/core";
+import GoogleLogin from 'react-google-login';
+import { login } from '../../actions/session.login.action';
+import { logout } from '../../actions/session.logout.action';
 
-import BottomBar from '../bottom-bar/BottomBar';
-import Wallet from '../wallet/Wallet';
+import BottomBar from "../bottom-bar/BottomBar";
+import Wallet from "../wallet/Wallet";
 
 class Home extends Component {
   state = {};
@@ -25,8 +26,23 @@ class Home extends Component {
     store.dispatch(toggleHome());
   }
 
-  render() {
+  onSuccess(response) {
+    const token = response.getAuthResponse().id_token;
 
+    this.setState({ openMenu: false });
+    store.dispatch(login(token));
+  }
+
+  logout() {
+    this.setState({ openMenu: false });
+    store.dispatch(logout());
+  }
+
+  onFailure(error) {
+    console.log(error);
+  }  
+
+  render() {
     return (
       <div className="home">
         <div className="rocket-wrapper">
@@ -34,15 +50,38 @@ class Home extends Component {
 
           {!this.props.profile && (
             <div className="rocket">
-              <img src="/assets/images/logo/synthesis-logo-wide-white.png" alt="synthesis" className="synthesis-logo" />
-              <div className="three-simple-steps-wrapper">
-                <p>A FRESH<br /> APPROACH< br />TO STREAM<br />BANKING</p>
+              <div className="synthesis-logo">
+                <img
+                  src="/assets/images/logo/synthesis-logo-wide-white.png"
+                  alt="Synthesis"
+                />
+                <img
+                  className="kafka-logo"
+                  src="/assets/images/kafka-white.png"
+                  alt="Streaming"
+                />
               </div>
-              <Button variant="contained" color="secondary" type="submit">
-                Let's get started
-              </Button>
             </div>
           )}
+        </div>
+
+        <div className="stream-big">
+          <p>
+            <h4>A streaming approach to mobile wallets</h4>
+
+            <GoogleLogin
+              clientId="658977310896-knrl3gka66fldh83dao2rhgbblmd4un9.apps.googleusercontent.com"
+              render={renderProps => (
+                <Button variant="outlined" color="primary" size="large" onClick={renderProps.onClick}>
+                  STREAM BIG!
+                </Button>
+              )}
+              buttonText="Login"
+              onSuccess={(e) => this.onSuccess(e)}
+              onFailure={(e) => this.onFailure(e)}
+              cookiePolicy={"single_host_origin"}
+            />
+          </p>
         </div>
 
         <div className="shopping-options-container">
@@ -52,16 +91,16 @@ class Home extends Component {
                 <img src="/assets/images/money-bag.svg" alt="add-money" />
                 <span>Add Money</span>
               </Link>
-              <hr/>
+              <hr />
               <Link to="/receive">
                 <img src="/assets/images/receive.svg" alt="receive" />
                 <span>Receive Money</span>
               </Link>
-              <hr/>
+              <hr />
               <Link to="/scan">
                 <img src="/assets/images/mobile-pay.svg" alt="mobile-pay" />
                 <span>Pay Someone</span>
-              </Link>           
+              </Link>
             </div>
           )}
         </div>
@@ -84,7 +123,7 @@ class Home extends Component {
 function mapStateToProps(state) {
   return {
     ...state.ping,
-    profile: state.user.profile  
+    profile: state.user.profile
   };
 }
 

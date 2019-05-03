@@ -3,8 +3,6 @@ import { Route, Switch } from 'react-router';
 
 import './App.css';
 
-import OktaLogin from '../login/OktaLogin'
-import OktaRedirect from '../login/OktaRedirect'
 import Menu from '../menu/Menu';
 import Home from '../home/Home';
 import Register from '../register/Register';
@@ -32,8 +30,6 @@ export default class App extends Component {
         <div className="content">
           <Switch>
             <Route exact path="/" render={() => <Home />} />
-            <Route path="/login" render={() => <OktaLogin />} />
-            <Route path="/implicit/callback" render={() => <OktaRedirect />} />
             <Route path="/register" render={() => <Register />} />
             <Route path="/unregister" render={() => <Unregister />} />
             <Route path="/otp" render={() => <Otp />} />

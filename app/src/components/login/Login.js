@@ -44,11 +44,6 @@ class Login extends Component {
     store.dispatch(login(token));
   }
 
-  loginOkta() {
-    this.setState({ openMenu: false });
-    store.dispatch(push('/login'));
-  }
-
   logout() {
     this.setState({ openMenu: false });
     store.dispatch(logout());
@@ -106,9 +101,6 @@ class Login extends Component {
                           onFailure={(e) => this.onFailure(e)}
                         />
                         )}
-                    </MenuItem>
-                    <MenuItem>
-                      <Button onClick={(e) => this.loginOkta()}>Sign in (Okta)</Button>
                     </MenuItem>
                   </MenuList>
                 </ClickAwayListener>

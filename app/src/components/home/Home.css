@@ -1,124 +1,116 @@
-/* REMOVE */
-.testcode {
-    display: flex;
-    padding: 10px;
-}
-.testcode button {
-    width: 25%;
-    margin: 0 5px;
-}
-.testcode div {
-    width: 25%;
-}
-/* REMOVE */
-
 .home .rocket-wrapper {
-    background-image: linear-gradient(to left bottom, #051937, #09475d, #3e7679, #81a693, #cbd4b7);
-    margin-top: -24px;
-    position: relative;
+  background-color: #ff3cac;
+  background-image: linear-gradient(
+    10deg,
+    #ff3cac 0%,
+    #784ba0 50%,
+    #2b86c5 100%
+  );
+  margin-top: -80px;
+  position: relative;
 }
 
 .home .rocket {
-    margin-bottom: 1.5em;
-    padding-bottom: 200px;
-}
-
-.home .rocket-wrapper img {
-    margin-bottom: -4px;
-    padding-top: 25px;
+  margin-bottom: 1.5em;
+  padding-top: 100px;
+  padding-bottom: 30px;
 }
 
 .home .rocket-wrapper .synthesis-logo {
-   width: 50%;
-   padding-left: 10px;
-   padding-top: 50px;
-   padding-bottom: 200px;
-   padding: 2em 2em 0 2em;
+  text-align: center;
+}
+
+.home .rocket-wrapper .synthesis-logo img {
+  width: 80%;
+}
+
+.home .rocket-wrapper img.kafka-logo {
+  width: 65%;
+}
+
+.home .stream-big {
+  text-align: center;
+}
+
+.home .stream-big h4 {
+  padding: 1em;
+  font-weight: 200;
 }
 
 .home .rocket-wrapper button {
-    border-radius: 2em;
-    bottom: -24px;
-    left: 0;
-    margin: auto;
-    padding: 12px 0;
-    position: absolute;
-    right: 0;
-    width: 60%;
-}
-
-.home .three-simple-steps-wrapper {
-    color:white;
-    bottom: 0;
-    box-sizing: border-box;
-    padding: 2.5em 2.5em 3em 1em;
-    position: absolute;
-    right: 0;  
+  border-radius: 2em;
+  bottom: -24px;
+  left: 0;
+  margin: auto;
+  padding: 12px 0;
+  position: absolute;
+  right: 0;
+  width: 60%;
 }
 
 .home .shopping-category-header {
-    font-size: .9em;
-    font-weight: 600;
-    padding: 1em;
+  font-size: 0.9em;
+  font-weight: 600;
+  padding: 1em;
 }
 
 .home .shopping-option-wrapper {
-    display: flex;
-    padding: 0 .5em;
-    margin-bottom: .8em;
+  display: flex;
+  padding: 0 0.5em;
+  margin-bottom: 0.8em;
 }
 
-.home .shopping-option-wrapper a, 
+.home .shopping-option-wrapper a,
 .home .shopping-option-wrapper div {
-    color: #7e7e7e;
-    display: block;
-    font-size: 0.75em;
-    text-align: center;
-    text-decoration: none;
-    flex: 1;
-    justify-content: space-evenly;
+  color: #7e7e7e;
+  display: block;
+  font-size: 0.75em;
+  text-align: center;
+  text-decoration: none;
+  flex: 1;
+  justify-content: space-evenly;
 }
 
 .home .shopping-option-wrapper a img,
 .home .shopping-option-wrapper div img {
-    height: 3.5em;
-    margin-bottom: 5px;
+  height: 3.5em;
+  margin-bottom: 5px;
 }
 
 .home .shopping-category-breakline {
-    margin: .8em .8em 0 .8em;
-    border-bottom: 1px solid var(--linebreak-grey);
+  margin: 0.8em 0.8em 0 0.8em;
+  border-bottom: 1px solid var(--linebreak-grey);
 }
 
 .home .shopping-options:nth-last-child(1) .shopping-category-breakline {
-    margin-bottom: 60px;
+  margin-bottom: 60px;
 }
 
 .home .wallet-menu {
-    margin: 10px;
+  margin: 10px;
 }
 
 .home .wallet-menu img {
-    height: 60px;
-    vertical-align: middle;
+  height: 60px;
+  vertical-align: middle;
 }
 
 .home .wallet-menu a {
-    text-decoration: none;
-    color: #212121;
-    display: block;
-    margin: .5em 2em .5em 1em;    
+  text-decoration: none;
+  color: #212121;
+  display: block;
+  margin: 0.5em 2em 0.5em 1em;
 }
 
 .home .wallet-menu span {
-    font-size: 1.3em;
-    font-weight: 100;
-    margin-left: 1em;
-    vertical-align: middle;
+  font-size: 1.3em;
+  font-weight: 100;
+  margin-left: 1em;
+  vertical-align: middle;
 }
 
 .home .wallet-menu-icon {
-    font-size: 60px;
-    vertical-align: middle;
-    color: #212121;
+  font-size: 60px;
+  vertical-align: middle;
+  color: #212121;
 }
