@@ -101,7 +101,7 @@ class Login extends Component {
                         >Logout</Button>
                       ) : (
                         <GoogleLogin
-                          clientId="157124694962-21gt3rn3dll900emrdug7acma508ptrv.apps.googleusercontent.com"
+                          clientId="836096720-e1grbfftjd7tq6kou7k7i5s472k7j9kc.apps.googleusercontent.com"
                           onSuccess={(e) => this.onSuccess(e)}
                           onFailure={(e) => this.onFailure(e)}
                         />
