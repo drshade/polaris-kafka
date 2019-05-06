@@ -1,12 +1,8 @@
 .add-money .balance {
-  box-shadow: 0px 2px 4px -1px rgba(0, 0, 0, .2),
-    0px 4px 5px 0px rgba(0, 0, 0, .14),
-    0px 1px 10px 0px rgba(0, 0, 0, .12);
   color: #595959;
-  font-size: 1em;
-  margin-top: -15px;
-  padding: 1.2em;
+  font-size: 1.5em;
   text-align: center;
+  font-weight: 200;
 }
 
 .add-money .amounts {
@@ -18,10 +14,10 @@
   font-size: 1.5em;
   font-weight: 400;
   margin-right: 0;
-  margin-top: -.5em;
+  margin-top: -0.5em;
 }
 
-.add-money .amounts input {  
+.add-money .amounts input {
   font-size: 3em;
   font-weight: 400;
   text-align: center;
@@ -39,17 +35,17 @@
 
 .add-money .amounts div.add-buttons button {
   background-color: var(--primary-color);
-  border-radius: 2em; 
+  border-radius: 2em;
   font-size: 1em;
   font-weight: 400;
-  margin: 0 .15em;
-  padding: .6em 0;
-  width: calc(33.3% - .3em);
+  margin: 0 0.15em;
+  padding: 0.6em 0;
+  width: calc(33.3% - 0.3em);
 }
 
 .add-money .amounts div.add-buttons button:active {
-    background-color: var(--primary-color);
-    color: red;
+  background-color: var(--primary-color);
+  color: red;
 }
 
 .add-money .amounts div.button-container {
@@ -60,9 +56,7 @@
 }
 
 .add-money .amounts div.button-container button {
-  background-color: rgb(255, 200, 42);
   border-radius: 2em;
-  color: #000;
   padding: 12px 0;
   width: 100%;
 }
@@ -70,4 +64,8 @@
 .add-money .amounts div.button-container button:disabled {
   background-color: #f0f0f0;
   color: #858585;
+}
+
+.MuiInput-underline-121:before {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1) !important;
 }

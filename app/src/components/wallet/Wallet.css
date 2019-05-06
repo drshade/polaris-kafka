@@ -1,79 +1,79 @@
 .wallet .money {
-    display: -webkit-flex;
-    display: flex;
-    text-align: center;
-    padding: 3em 0;
+  display: -webkit-flex;
+  display: flex;
+  text-align: center;
+  padding: 30px 0;
 }
 
 .wallet .money .balance {
-    flex: auto;
+  flex: auto;
 }
 
 .wallet .money .add-money {
-    flex: 0;
-    padding: 0 0 1em 1em;
-    border-bottom: 1px solid var(--primary-color);
+  flex: 0;
+  padding: 0 0 1em 1em;
+  border-bottom: 1px solid var(--primary-color);
 }
 
 .wallet .money .add-money a {
-    color: white;
-    text-decoration: none;
-    font-size: 0.75em;
-    display: block;
-    width: 6em;
+  color: white;
+  text-decoration: none;
+  font-size: 0.75em;
+  display: block;
+  width: 6em;
 }
 
 .wallet .money img {
-    height: 2.2em;
-    display: block;
-    margin: 0 auto;
+  height: 2.2em;
+  display: block;
+  margin: 0 auto;
 }
 
 .wallet .buttons {
-    display: flex;
-    justify-content: space-evenly;
-    margin-top: -1.5em;
-    padding-bottom: 0.5em;
+  display: flex;
+  justify-content: space-evenly;
+  margin-top: -1.5em;
+  padding-bottom: 0.5em;
 }
 
 .wallet .buttons a {
-    display: block;
-    color: #ffffff;
-    text-align: center;
-    text-decoration: none;
-    font-size: 0.75em;
-    width: 25%;
+  display: block;
+  color: #ffffff;
+  text-align: center;
+  text-decoration: none;
+  font-size: 0.75em;
+  width: 25%;
 }
 
 .wallet .buttons img {
-    display: block;
-    height: 4em;
-    margin: auto;
+  display: block;
+  height: 4em;
+  margin: auto;
 }
 
 .wallet sub.currency {
-    position: absolute;
-    font-size: 2.2em;
-    opacity: 0.4;
-    bottom: -30px;
-    left: -10px;
+  position: absolute;
+  font-size: 2.6em;
+  opacity: 0.3;
+  bottom: -68px;
+  left: 20px;
 }
 
 .wallet div.amount {
-    text-align: center;
-    font-size: 6em;
-    display: -webkit-flex;
-    display: flex;
-    color: #fff;
-    margin-bottom: -10px;
+  text-align: center;
+  font-size: 6em;
+  display: -webkit-flex;
+  display: flex;
+  color: #fff;
+  margin-bottom: -10px;
 }
 
 .wallet div.description {
-    color: white;
-    font-size: 1em;
-    position: absolute;
-    opacity: 0;
-    bottom: 10px;
-    right: 10px;
-    font-weight: bold;
+  color: white;
+  font-size: 1em;
+  position: absolute;
+  opacity: 0;
+  bottom: 10px;
+  right: 10px;
+  font-weight: bold;
 }

@@ -1,28 +1,28 @@
-import React, { Component } from 'react';
-import { connect } from 'react-redux';
+import React, { Component } from "react";
+import { connect } from "react-redux";
 
-import { TextField, InputAdornment, Button } from '@material-ui/core';
+import { TextField, InputAdornment, Button } from "@material-ui/core";
 
-import './AddMoney.css';
-import store from '../../store';
+import "./AddMoney.css";
+import store from "../../store";
 
-import { amountToAdd } from '../../actions/wallet.amountToAdd.action';
-import { deposit } from '../../actions/wallet.deposit.action';
-import { generate } from '../../services/reference.service';
-import { push } from 'connected-react-router';
+import { amountToAdd } from "../../actions/wallet.amountToAdd.action";
+import { deposit } from "../../actions/wallet.deposit.action";
+import { generate } from "../../services/reference.service";
+import { push } from "connected-react-router";
 
 class AddMoney extends Component {
-  state = { amount: '' };
+  state = { amount: "" };
 
   onChange(amount) {
-    if (amount === 0) amount = '';
-    
+    if (amount === 0) amount = "";
+
     this.setState({ amount });
   }
 
   addMoney(value) {
     let amount = (this.state.amount || 0) + value;
-    
+
     this.setState({ amount });
   }
 
@@ -30,8 +30,8 @@ class AddMoney extends Component {
     const reference = generate();
 
     store.dispatch(amountToAdd(this.state.amount));
-    store.dispatch(deposit(reference, this.state.amount));  
-    store.dispatch(push('/'));
+    store.dispatch(deposit(reference, this.state.amount));
+    store.dispatch(push("/"));
   }
 
   render() {
@@ -40,7 +40,7 @@ class AddMoney extends Component {
     return (
       <div className="add-money">
         <div className="balance">
-          Current Ballance: <strong>R{balance}</strong>
+          Current Balance<br /><strong>R{balance}</strong>
         </div>
         <div className="amounts">
           <TextField
@@ -60,21 +60,27 @@ class AddMoney extends Component {
               )
             }}
             value={this.state.amount}
-            onChange={(e) => this.onChange(Number(e.target.value))}
+            onChange={e => this.onChange(Number(e.target.value))}
           />
           <div className="add-buttons">
-            <Button variant="contained" onClick={() => this.addMoney(100)}>
+            <Button variant="outlined" color="primary" onClick={() => this.addMoney(100)}>
               + R100
             </Button>
-            <Button variant="contained" onClick={() => this.addMoney(200)}>
+            <Button variant="outlined" color="primary" onClick={() => this.addMoney(200)}>
               + R200
             </Button>
-            <Button variant="contained" onClick={() => this.addMoney(500)}>
+            <Button variant="outlined" color="primary" onClick={() => this.addMoney(500)}>
               + R500
             </Button>
           </div>
           <div className="button-container keyboard-up">
-            <Button variant="contained" color="primary" type="submit" onClick={(e) => this.depositMoney()} disabled={!this.state.amount}>
+            <Button
+              variant="contained"
+              color="primary"
+              type="submit"
+              onClick={e => this.depositMoney()}
+              disabled={!this.state.amount}
+            >
               Add Money
             </Button>
           </div>

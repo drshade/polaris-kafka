@@ -7,12 +7,13 @@
     #2b86c5 100%
   );
   margin-top: -80px;
+  padding-top: 58px;
   position: relative;
 }
 
 .home .rocket {
   margin-bottom: 1.5em;
-  padding-top: 100px;
+  padding-top: 30px;
   padding-bottom: 30px;
 }
 
@@ -88,6 +89,7 @@
 
 .home .wallet-menu {
   margin: 10px;
+  margin-top: 30px;
 }
 
 .home .wallet-menu img {
@@ -113,4 +115,13 @@
   font-size: 60px;
   vertical-align: middle;
   color: #212121;
+}
+
+.wallet-hr {
+  margin-top: 1em;
+  margin-bottom: 1em;
+  color: #e2e2e2;
+  background-color: #e2e2e2;
+  border: none;
+  height: 1px;
 }

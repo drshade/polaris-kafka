@@ -17,16 +17,14 @@ export default class UserQrCode extends Component {
         <div className="qrCode">
           <QRCode
             value={payUrl}
-            size={200}
+            size={250}
             bgColor={'#ffffff'}
-            fgColor={'#6330d3'}
+            fgColor={'#ff3cac'}
             level={'L'}
             includeMargin={false}
             renderAs={'svg'}
           />
         </div>
-        <i>Your personal QR code.</i>
-        <h2>{this.props.fullname}</h2>
       </div>
     );
   }

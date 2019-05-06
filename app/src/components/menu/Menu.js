@@ -1,5 +1,5 @@
-import React, { Component } from 'react';
-import { connect } from 'react-redux';
+import React, { Component } from "react";
+import { connect } from "react-redux";
 
 import {
   AppBar,
@@ -11,25 +11,25 @@ import {
   ListItemText,
   IconButton,
   Divider
-} from '@material-ui/core';
+} from "@material-ui/core";
 
-import MenuIcon from '@material-ui/icons/Menu';
-import PersonIcon from '@material-ui/icons/Person';
-import HomeIcon from '@material-ui/icons/Home';
-import PersonAddIcon from '@material-ui/icons/PersonAdd';
-import ArrowBackIos from '@material-ui/icons/ArrowBackIos';
-import PersonAddDisabledIcon from '@material-ui/icons/PersonAddDisabled';
+import MenuIcon from "@material-ui/icons/Menu";
+import PersonIcon from "@material-ui/icons/Person";
+import HomeIcon from "@material-ui/icons/Home";
+import PersonAddIcon from "@material-ui/icons/PersonAdd";
+import ArrowBackIos from "@material-ui/icons/ArrowBackIos";
+import PersonAddDisabledIcon from "@material-ui/icons/PersonAddDisabled";
 
-import { push, goBack } from 'connected-react-router';
+import { push, goBack } from "connected-react-router";
 
-import { Link } from 'react-router-dom';
+import { Link } from "react-router-dom";
 
-import './Menu.css';
-import store from '../../store';
+import "./Menu.css";
+import store from "../../store";
 
-import { login } from '../../actions/session.login.action';
+import { login } from "../../actions/session.login.action";
 
-import Login from '../login/Login';
+import Login from "../login/Login";
 
 class Menu extends Component {
   state = {
@@ -42,7 +42,7 @@ class Menu extends Component {
   }
 
   login() {
-    store.dispatch(push('/register'));
+    store.dispatch(push("/register"));
   }
 
   toggleMenu() {
@@ -74,28 +74,63 @@ class Menu extends Component {
   }
 
   render() {
-
     return (
       <div className="menu">
-        <AppBar position="fixed">
-          <Toolbar className="toolbar-top">
-            <IconButton className="menuButton" color="inherit" aria-label="Menu" onClick={() => this.toggleDrawer()}>
-              <MenuIcon />
-            </IconButton>
-            { this.props.isHome === true ? (
-            <IconButton className="menuButton" color="inherit" aria-label="Menu" onClick={() => this.navigateBack()}>
-              <ArrowBackIos />
-            </IconButton>) : null }            
-            <h1 className="title">
-              <Link to="/">                
-              </Link>
-            </h1>           
-            <Login />
-          </Toolbar>
-        </AppBar>
+        {this.props.isHome === true ? (
+          <AppBar position="fixed">
+            <Toolbar className="toolbar-top">
+              <IconButton
+                className="menuButton"
+                color="inherit"
+                aria-label="Menu"
+                onClick={() => this.toggleDrawer()}
+              >
+                <MenuIcon />
+              </IconButton>
+              <IconButton
+                className="menuButton"
+                color="inherit"
+                aria-label="Menu"
+                onClick={() => this.navigateBack()}
+              >
+                <ArrowBackIos />
+              </IconButton>
+              <h1 className="title">
+                <Link to="/" />
+              </h1>
+              <Login />
+            </Toolbar>
+          </AppBar>
+        ) : (
+          <AppBar position="fixed" className="toolbar-transparent">
+            <Toolbar className="toolbar-top">
+              <IconButton
+                className="menuButton"
+                color="inherit"
+                aria-label="Menu"
+                onClick={() => this.toggleDrawer()}
+              >
+                <MenuIcon />
+              </IconButton>
+              <h1 className="title">
+                <Link to="/" />
+              </h1>
+              <Login />
+            </Toolbar>
+          </AppBar>
+        )}
 
-        <SwipeableDrawer open={this.state.open} onClose={() => this.toggleDrawer()} onOpen={() => this.toggleDrawer()}>
-          <div tabIndex={0} role="button" onClick={() => this.toggleDrawer()} onKeyDown={() => this.toggleDrawer()}>
+        <SwipeableDrawer
+          open={this.state.open}
+          onClose={() => this.toggleDrawer()}
+          onOpen={() => this.toggleDrawer()}
+        >
+          <div
+            tabIndex={0}
+            role="button"
+            onClick={() => this.toggleDrawer()}
+            onKeyDown={() => this.toggleDrawer()}
+          >
             <div className="list">
               <List>
                 <ListItem button key="Home">
@@ -142,7 +177,7 @@ class Menu extends Component {
 
 function mapStateToProps(state) {
   return {
-    isHome: state.navigation.isHome   
+    isHome: state.navigation.isHome
   };
 }
 

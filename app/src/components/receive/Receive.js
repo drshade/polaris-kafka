@@ -1,6 +1,5 @@
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
-import { Divider } from '@material-ui/core';
 
 import './Receive.css';
 import UserQrCode from '../user-qr-code/UserQrCode';
@@ -13,9 +12,10 @@ class Receive extends Component {
 
     return (
       <div>
-        <h2>Receive</h2>
+        <br />
+        <br />
+        <h2>{this.props.profile.fullname}</h2>
         <UserQrCode email={this.props.profile.email} fullname={this.props.profile.fullname} />
-        <Divider />       
       </div>
     );
   }

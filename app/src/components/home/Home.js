@@ -12,7 +12,6 @@ import GoogleLogin from 'react-google-login';
 import { login } from '../../actions/session.login.action';
 import { logout } from '../../actions/session.logout.action';
 
-import BottomBar from "../bottom-bar/BottomBar";
 import Wallet from "../wallet/Wallet";
 
 class Home extends Component {
@@ -65,12 +64,12 @@ class Home extends Component {
           )}
         </div>
 
-        <div className="stream-big">
+        {!this.props.profile && (<div className="stream-big">
           <p>
             <h4>A streaming approach to mobile wallets</h4>
 
             <GoogleLogin
-              clientId="658977310896-knrl3gka66fldh83dao2rhgbblmd4un9.apps.googleusercontent.com"
+              clientId="836096720-e1grbfftjd7tq6kou7k7i5s472k7j9kc.apps.googleusercontent.com"
               render={renderProps => (
                 <Button variant="outlined" color="primary" size="large" onClick={renderProps.onClick}>
                   STREAM BIG!
@@ -83,6 +82,7 @@ class Home extends Component {
             />
           </p>
         </div>
+        )}
 
         <div className="shopping-options-container">
           {this.props.profile && (
@@ -91,12 +91,12 @@ class Home extends Component {
                 <img src="/assets/images/money-bag.svg" alt="add-money" />
                 <span>Add Money</span>
               </Link>
-              <hr />
+              <hr className="wallet-hr" />
               <Link to="/receive">
                 <img src="/assets/images/receive.svg" alt="receive" />
                 <span>Receive Money</span>
               </Link>
-              <hr />
+              <hr className="wallet-hr" />
               <Link to="/scan">
                 <img src="/assets/images/mobile-pay.svg" alt="mobile-pay" />
                 <span>Pay Someone</span>
@@ -113,8 +113,6 @@ class Home extends Component {
           <div>Ponged: {this.props.ponged} </div>
           <div>Balance: {this.props.balance} </div>
         </div> */}
-
-        {this.props.profile && <BottomBar />}
       </div>
     );
   }
