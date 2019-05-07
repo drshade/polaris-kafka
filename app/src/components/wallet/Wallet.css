@@ -55,8 +55,10 @@
   position: absolute;
   font-size: 2.6em;
   opacity: 0.3;
-  bottom: -68px;
+  bottom: 0px;
   left: 20px;
+  line-height: 0.78;
+  overflow: hidden;
 }
 
 .wallet div.amount {

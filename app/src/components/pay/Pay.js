@@ -39,7 +39,7 @@ class Pay extends Component {
     let p = this.props.personToPay;
 
     return (
-      <div>
+      <div className="pay">
         <h4>Pay {p}</h4>
         <div className="disc">
           <span>{p[0]}</span>

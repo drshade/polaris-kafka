@@ -108,7 +108,6 @@ class MoneyTicker extends Component {
     return (
       <div className="money-ticker">
         <div className="amount">
-          <sub className="currency">R</sub>
           <div className="value-wrapper">
             <div className="value current-balance" ref={this.balanceRef}>
               {split(balance)}
@@ -117,6 +116,7 @@ class MoneyTicker extends Component {
               {split(previousBalance)}
             </div>
           </div>
+          <sub className="currency">R</sub>
         </div>
       </div>
     );
