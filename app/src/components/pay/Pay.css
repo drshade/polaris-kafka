@@ -1,9 +1,12 @@
 h4 {
     text-align: center;
+    color: #595959;
+    font-size: 1.5em;
+    font-weight: 200;
 }
 
 .disc {
-    background-color: var(--accent-color);
+    background-color: #b55fe4;
     border-radius: 4em;
     box-shadow: 0 2px 2px 0 rgba(0, 0, 0, .4);
     display: table;
@@ -11,6 +14,7 @@ h4 {
     margin: auto;
     text-align: center;
     width: 6em;
+    color: white;
 }
 
 .disc span {
@@ -37,7 +41,6 @@ h4 {
 
 
 .fields .currency {
-    color: var(--primary-color);
     font-size: 1.5em;
     font-weight: 400;
     margin-right: 0;
@@ -45,7 +48,6 @@ h4 {
 }
 
 .fields > div:first-of-type input {
-    color: var(--primary-color);
     font-size: 2.5em;
     font-weight: 400;
     text-align: center;
@@ -76,8 +78,6 @@ span.currency {
 
 .fields button {
     width: 100%;
-    background-color: rgb(255, 200, 42);
-    color: #000;
     border-radius: 2em;
     padding: 12px 0;
 }

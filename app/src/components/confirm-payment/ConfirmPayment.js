@@ -53,20 +53,15 @@ class ConfirmPayment extends Component {
                   <div className="value">{amount.toFixed(2)}</div>
                 </div>
               </div>
-
-              <div className="payment-to-description">Payment to {to}</div>
-              <div className="description">Description</div>
-              <div className="transaction-description">{description}</div>
             </div>
           )}
         </div>
         <div className="bottom">
-          <div className="description">Updated balance</div>
+          <h2 className="description">Updated balance</h2>
 
           <div className="currency-label-wrapper">
             <div className="amount">
-              <sub className="currency">R</sub>
-              <div className="value">{balance.toFixed(2)}</div>
+              <strong>R{balance.toFixed(2)}</strong>
             </div>
           </div>
 
