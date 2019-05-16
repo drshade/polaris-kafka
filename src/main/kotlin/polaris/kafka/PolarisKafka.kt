@@ -106,6 +106,8 @@ class PolarisKafka {
 
         properties[StreamsConfig.COMMIT_INTERVAL_MS_CONFIG] = "1000"
 
+        properties[StreamsConfig.NUM_STREAM_THREADS_CONFIG] = Runtime.getRuntime().availableProcessors()
+
         serdeConfig = Collections.singletonMap(AbstractKafkaAvroSerDeConfig.SCHEMA_REGISTRY_URL_CONFIG,
             schema_registry_url)
 
