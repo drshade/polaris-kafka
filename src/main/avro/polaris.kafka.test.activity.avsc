@@ -1,35 +1,59 @@
-[{
+[
+	{
 		"namespace": "polaris.kafka.test.activities",
 		"name": "ActivityKey",
 		"type": "record",
-		"fields": [{
+		"fields": [
+			{
 				"name": "activity",
 				"type": "string"
 			}
 		]
-	}, {
+	},
+	{
+		"namespace": "polaris.kafka.test.activities",
+		"name": "PopularityKey",
+		"type": "record",
+		"fields": [
+			{
+				"name": "windowSize",
+				"type": "int"
+			},
+			{
+				"name": "windowStart",
+				"type": "long"
+			},
+			{
+				"name": "windowEnd",
+				"type": "long"
+			}
+		]
+	},
+	{
 		"namespace": "polaris.kafka.test.activities",
 		"name": "PopularityValue",
 		"type": "record",
-		"fields": [{
+		"fields": [
+			{
 				"name": "activity",
 				"type": "string"
-			}, {
+			},
+			{
 				"name": "count",
-				"type": "long"
-			}, {
-				"name": "since",
 				"type": "long"
 			}
 		]
-	}, {
+	},
+	{
 		"namespace": "polaris.kafka.test.activities",
 		"name": "ActivityValue",
 		"type": "record",
-		"fields": [{
+		"fields": [
+			{
 				"name": "activity",
 				"type": "string"
-			}, {
+			},
+			{
 				"name": "users",
 				"type": {
 					"type": "array",
@@ -38,7 +62,8 @@
 						"type": "string"
 					}
 				}
-			}, {
+			},
+			{
 				"name": "count",
 				"type": "long"
 			}
