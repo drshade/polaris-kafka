@@ -28,8 +28,12 @@ fun main(args: Array<String>) {
         val popularityTopic = topic<PopularityKey, PopularityValue>("popularity", 12, 2)
 
         val groupedUserActivities = consumeStream(userActivityTopic)
-            .groupBy({ _, v -> v.getActivity() },
-                Grouped.with(Serdes.String(), userActivityTopic.valueSerde))
+            .groupBy(
+                { _, v ->
+                    v.getActivity()
+                },
+                Grouped.with(Serdes.String(), userActivityTopic.valueSerde)
+            )
 
         val popularityStream = listOf(
             6 * 60 * 60,    // 6 hours
