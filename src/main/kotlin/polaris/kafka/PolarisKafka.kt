@@ -104,9 +104,13 @@ class PolarisKafka {
         properties[StreamsConfig.CONSUMER_PREFIX + ConsumerConfig.INTERCEPTOR_CLASSES_CONFIG] =
             "io.confluent.monitoring.clients.interceptor.MonitoringConsumerInterceptor"
 
-        properties[StreamsConfig.COMMIT_INTERVAL_MS_CONFIG] = "1000"
-
+        // Set number of streams threads to number of cores - seems reasonable
+        //
         properties[StreamsConfig.NUM_STREAM_THREADS_CONFIG] = Runtime.getRuntime().availableProcessors()
+
+        // Enable optimization - lets see what it does?
+        //
+        properties[StreamsConfig.TOPOLOGY_OPTIMIZATION] = StreamsConfig.OPTIMIZE
 
         serdeConfig = Collections.singletonMap(AbstractKafkaAvroSerDeConfig.SCHEMA_REGISTRY_URL_CONFIG,
             schema_registry_url)
