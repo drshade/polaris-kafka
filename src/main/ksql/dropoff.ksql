@@ -1,0 +1,41 @@
+-- User activity session dropoff example (WIP)
+--
+CREATE STREAM user_activity \
+WITH ( \
+    KAFKA_TOPIC='user-activity', \
+    VALUE_FORMAT='AVRO', \
+    KEY='userId'
+);
+
+CREATE TABLE user_activity_session AS \
+SELECT userId, COLLECT_LIST(activity) \
+FROM user_activity \
+WINDOW SESSION (10 SECONDS) \
+GROUP BY userId \
+HAVING COLLECT_LIST(activity) LIKE '%ADDED_TO_CART%' \
+AND COLLECT_LIST(activity) NOT LIKE '%PAID%';
+
+-- This is better but broken
+HAVING ARRAYCONTAINS(COLLECT_LIST(activity), 'PAID');
+
+
+-- User activity session count examples
+--
+SELECT userId, COUNT(*) \
+FROM user_activity03 \
+WINDOW SESSION (1 MINUTE) \
+GROUP BY userId;
+
+padded-archie | 22
+queens-david | 37
+...
+
+SELECT userId, COUNT(*) \
+FROM user_activity03 \
+WINDOW SESSION (10 SECONDS) \
+GROUP BY userId;
+
+padded-archie | 20
+padded-archie | 2
+queens-david | 37
+...
