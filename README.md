@@ -21,7 +21,7 @@ with(PolarisKafka("my-stream-processor-app-id")) {
     val myTopic = topic<MyAvroKey, MyAvroValue>("my-topic-name", 12, 2)
 
     consumeStream(myTopic)
-        .peek { key, value -> println("Processing record") }
+        .peek { key, value -> println("$key -> $value") }
 
     start()
 }
