@@ -22,15 +22,15 @@ fun main(args : Array<String>) {
         val pingStream = consumeStream(ping)
 
         pingStream
-            .filter { key, value -> value.getAction() == "PING" }
-            .mapValues { key, value ->
+            .filter { _, value -> value.getAction() == "PING" }
+            .mapValues { _, value ->
                 ActionValue(value.getPrincipal(), "TEST", "PONG", null)
             }
             .to(pong.topic, pong.producedWith())
 
         pingStream
-            .filter { key, value -> value.getAction() == "BIGPING" }
-            .mapValues { key, value ->
+            .filter { _, value -> value.getAction() == "BIGPING" }
+            .mapValues { _, value ->
                 ActionValue(value.getPrincipal(), "TEST", "BIGPONG", null)
             }
             .to(pong.topic, pong.producedWith())
