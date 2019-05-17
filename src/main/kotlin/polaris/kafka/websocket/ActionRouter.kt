@@ -186,7 +186,7 @@ class ActionRouter(private val websocketTopic: SafeTopic<WebsocketEventKey, Webs
         // Tracking only connected sockets
         //
         websocketStream
-            .filter { key, value ->
+            .filter { _, value ->
                 value.getState() != "SENT"
             }
             .map { key, value ->
@@ -195,7 +195,7 @@ class ActionRouter(private val websocketTopic: SafeTopic<WebsocketEventKey, Webs
             .groupByKey(Grouped.with(Serdes.String(), websocketEventValueSerde))
             .aggregate(
                 { null },
-                { key : String, value : WebsocketEventValue, accum : ReplyPath? ->
+                { key : String, value : WebsocketEventValue, _ : ReplyPath? ->
                     //println("WebsocketsConnected Key: $key Value: $value Accum: $accum")
                     if (value.getState() != "CLOSED" && value.getState() != "ERROR") {
                         println("WebsocketsConnected Key: $key ADDED Value: $value")
@@ -249,7 +249,7 @@ class ActionRouter(private val websocketTopic: SafeTopic<WebsocketEventKey, Webs
             consumedStreams[from.topic] = polarisKafka.consumeStream(from)
             consumedStreams[from.topic]!!
         }
-        .filter { key, value ->
+        .filter { _, value ->
             value?.getResource() == matchResource && value.getAction() == matchAction
         }
         .transform(TransformerSupplier<ActionKey?, ActionValue?, KeyValue<WebsocketEventKey?, WebsocketEventValue?>>{
@@ -257,7 +257,7 @@ class ActionRouter(private val websocketTopic: SafeTopic<WebsocketEventKey, Webs
         })
         .filter { key, value -> key != null && value != null }
         .map { key, value -> KeyValue(key!!, value!!) }
-        .to(websocketTopic.topic, Produced.with(websocketTopic.keySerde, websocketTopic.valueSerde) { topic, key, value, numPartitions ->
+        .to(websocketTopic.topic, Produced.with(websocketTopic.keySerde, websocketTopic.valueSerde) { _, _, value, _ ->
             // Determine the partition from the replyPath
             //
             value.getReplyPath().getPartitions().shuffled()[0]
