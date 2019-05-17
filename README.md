@@ -7,10 +7,7 @@ A Maven repository for polaris kafka
 `build.gradle`:
 ```
 repositories {
-    maven {
-        name = 'polaris-kafka'
-        url = 'http://maven.polaris.dev'
-    }
+    maven { url 'http://maven.polaris.dev' }
 }
 dependencies {
     compile('dev.polaris:polaris-kafka:1.0.1')
