@@ -88,7 +88,7 @@ publishing {
     repositories {
         maven {
             name = 'polaris-kafka-repo'
-            url = "s3://polaris-kafka-maven-publish/maven2"
+            url = "s3://maven.polaris.dev"
 
             authentication {
                 awsIm(AwsImAuthentication)
