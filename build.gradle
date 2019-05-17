@@ -2,6 +2,11 @@ apply plugin: 'java'
 apply plugin: 'kotlin'
 apply plugin: 'application'
 apply plugin: 'idea'
+apply plugin: 'java-library'
+apply plugin: 'maven-publish'
+
+group = 'dev.polaris'
+version = '1.0'
 
 // The bits that compiles the Avro (.avsc) schema files to java pojos
 //
@@ -16,6 +21,7 @@ buildscript {
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
     }
 }
+
 apply plugin: "com.commercehub.gradle.plugin.avro"
 
 sourceCompatibility = 1.8
@@ -70,6 +76,25 @@ dependencies {
 
 compileKotlin {
     kotlinOptions.jvmTarget = "1.8"
+}
+
+publishing {
+    publications {
+        polarisKafka(MavenPublication) {
+            from components.java
+        }
+    }
+
+    repositories {
+        maven {
+            name = 'polaris-kafka-repo'
+            url = "s3://polaris-kafka-maven-publish/maven2"
+
+            authentication {
+                awsIm(AwsImAuthentication)
+            }
+        }
+    }
 }
 
 // This is a dummy - start scripts are detailed below
