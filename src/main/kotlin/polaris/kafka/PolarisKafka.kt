@@ -83,8 +83,10 @@ class PolarisKafka {
         // Fix checkpoint not found issue (multiple stream processor processes hitting the
         // same /tmp/kafka-streams folder
         //
-        val pid = ProcessHandle.current().pid()
-        properties[StreamsConfig.STATE_DIR_CONFIG] = "/tmp/kafka-streams-$pid"
+        // REMOVED because not supported in jvm 1.8
+        //
+        //val pid = ProcessHandle.current().pid()
+        //properties[StreamsConfig.STATE_DIR_CONFIG] = "/tmp/kafka-streams-$pid"
 
         properties[StreamsConfig.APPLICATION_ID_CONFIG] = applicationId
         properties[StreamsConfig.CLIENT_ID_CONFIG] = "$applicationId-client"
