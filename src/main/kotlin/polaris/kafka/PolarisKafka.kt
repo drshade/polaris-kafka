@@ -112,6 +112,9 @@ class PolarisKafka {
         //
         properties[StreamsConfig.TOPOLOGY_OPTIMIZATION] = StreamsConfig.OPTIMIZE
 
+        properties[StreamsConfig.PROCESSING_GUARANTEE_CONFIG] = StreamsConfig.AT_LEAST_ONCE
+        //properties[StreamsConfig.PROCESSING_GUARANTEE_CONFIG] = StreamsConfig.EXACTLY_ONCE
+
         serdeConfig = Collections.singletonMap(AbstractKafkaAvroSerDeConfig.SCHEMA_REGISTRY_URL_CONFIG,
             schema_registry_url)
 
@@ -209,6 +212,11 @@ class PolarisKafka {
 
         streams?.cleanUp()
         streams?.start()
+
+        Runtime.getRuntime().addShutdownHook(Thread {
+            println("Runtime closing")
+            stop()
+        })
     }
 
     fun stop() {
