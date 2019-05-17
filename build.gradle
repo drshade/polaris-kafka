@@ -6,7 +6,7 @@ apply plugin: 'java-library'
 apply plugin: 'maven-publish'
 
 group = 'dev.polaris'
-version = '1.0'
+version = '1.0.1'
 
 // The bits that compiles the Avro (.avsc) schema files to java pojos
 //
