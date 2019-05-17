@@ -83,8 +83,10 @@ class PolarisKafka {
         // Fix checkpoint not found issue (multiple stream processor processes hitting the
         // same /tmp/kafka-streams folder
         //
-        val pid = ProcessHandle.current().pid()
-        properties[StreamsConfig.STATE_DIR_CONFIG] = "/tmp/kafka-streams-$pid"
+        // REMOVED because not supported in jvm 1.8
+        //
+        //val pid = ProcessHandle.current().pid()
+        //properties[StreamsConfig.STATE_DIR_CONFIG] = "/tmp/kafka-streams-$pid"
 
         properties[StreamsConfig.APPLICATION_ID_CONFIG] = applicationId
         properties[StreamsConfig.CLIENT_ID_CONFIG] = "$applicationId-client"
@@ -104,7 +106,16 @@ class PolarisKafka {
         properties[StreamsConfig.CONSUMER_PREFIX + ConsumerConfig.INTERCEPTOR_CLASSES_CONFIG] =
             "io.confluent.monitoring.clients.interceptor.MonitoringConsumerInterceptor"
 
-        properties[StreamsConfig.COMMIT_INTERVAL_MS_CONFIG] = "1000"
+        // Set number of streams threads to number of cores - seems reasonable
+        //
+        properties[StreamsConfig.NUM_STREAM_THREADS_CONFIG] = Runtime.getRuntime().availableProcessors()
+
+        // Enable optimization - lets see what it does?
+        //
+        properties[StreamsConfig.TOPOLOGY_OPTIMIZATION] = StreamsConfig.OPTIMIZE
+
+        properties[StreamsConfig.PROCESSING_GUARANTEE_CONFIG] = StreamsConfig.AT_LEAST_ONCE
+        //properties[StreamsConfig.PROCESSING_GUARANTEE_CONFIG] = StreamsConfig.EXACTLY_ONCE
 
         serdeConfig = Collections.singletonMap(AbstractKafkaAvroSerDeConfig.SCHEMA_REGISTRY_URL_CONFIG,
             schema_registry_url)
@@ -203,6 +214,11 @@ class PolarisKafka {
 
         streams?.cleanUp()
         streams?.start()
+
+        Runtime.getRuntime().addShutdownHook(Thread {
+            println("Runtime closing")
+            stop()
+        })
     }
 
     fun stop() {

@@ -1,0 +1,39 @@
+CREATE STREAM useractivity
+WITH (
+    kafka_topic='user-activity',
+    value_format='AVRO'
+);
+
+--
+-- 1 minute most popular activity
+--
+CREATE TABLE most_popular_activity_1_min
+AS SELECT 
+    1 as INTERVAL,
+    windowStart() as WINDOWSTART,
+    windowEnd() as WINDOWEND,
+    activity as ACTIVITY, 
+    count(*) as COUNT,
+    COLLECT_SET(userid) as USERS
+FROM 
+    useractivity
+WINDOW HOPPING (SIZE 1 MINUTES, ADVANCE BY 10 SECONDS)
+GROUP BY
+    activity;
+
+--
+-- 5 minute most popular activity
+--
+INSERT INTO most_popular_activity_5_min
+SELECT
+    5 as INTERVAL,
+    windowStart() as WINDOWSTART,
+    windowEnd() as WINDOWEND,
+    activity as ACTIVITY, 
+    count(*) as COUNT,
+    COLLECT_SET(userid) as USERS
+FROM 
+    useractivity
+WINDOW HOPPING (SIZE 5 MINUTES, ADVANCE BY 10 SECONDS)
+GROUP BY
+    activity;

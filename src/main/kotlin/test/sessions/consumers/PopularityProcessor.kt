@@ -2,13 +2,19 @@
 package test.sessions.consumers
 
 import org.apache.kafka.common.serialization.Serdes
+import org.apache.kafka.common.utils.Bytes
 import org.apache.kafka.streams.KeyValue
 import org.apache.kafka.streams.kstream.Grouped
+import org.apache.kafka.streams.kstream.Materialized
+import org.apache.kafka.streams.kstream.Suppressed
 import org.apache.kafka.streams.kstream.Suppressed.BufferConfig.unbounded
+import org.apache.kafka.streams.kstream.Suppressed.untilTimeLimit
 import org.apache.kafka.streams.kstream.Suppressed.untilWindowCloses
 import org.apache.kafka.streams.kstream.TimeWindows
+import org.apache.kafka.streams.state.KeyValueStore
 import polaris.kafka.PolarisKafka
 import polaris.kafka.test.activities.ActivityKey
+import polaris.kafka.test.activities.PopularityKey
 import polaris.kafka.test.activities.PopularityValue
 import polaris.kafka.test.sessions.UserActivityKey
 import polaris.kafka.test.sessions.UserActivityValue
@@ -18,75 +24,80 @@ import java.time.Instant
 fun main(args: Array<String>) {
 
     with(PolarisKafka("polaris-kafka-activity-processor")) {
-        val nowStartSecs = Instant.now().toEpochMilli() / 1000
-
         val userActivityTopic = topic<UserActivityKey, UserActivityValue>("user-activity", 12, 2)
+        val popularityTopic = topic<PopularityKey, PopularityValue>("popularity", 12, 2)
 
-        val popularityTopic = topic<ActivityKey, PopularityValue>("popularity", 12, 2)
-
-        var countProcess = 0
-        val userActivityKGroupedStream = consumeStream(userActivityTopic)
-                .groupBy({ _, v ->
-                    countProcess++
+        val groupedUserActivities = consumeStream(userActivityTopic)
+            .groupBy(
+                { _, v ->
                     v.getActivity()
-                }, Grouped.with(Serdes.String(), userActivityTopic.valueSerde))
+                },
+                Grouped.with(Serdes.String(), userActivityTopic.valueSerde)
+            )
 
-        var countProcessB = 0
-        listOf(60L, 10L, 5L)
-                .map { rangeInSecs ->
-                    userActivityKGroupedStream
-
-                            .windowedBy(TimeWindows.of(Duration.ofSeconds(rangeInSecs)).grace(Duration.ofMillis(0)))
-                            .count()
-
-                            // Suppress - closed windows only
-                            //
-                            .suppress(untilWindowCloses(unbounded()))
-                            // .suppress(untilTimeLimit(Duration.ofSeconds(rangeInSecs), maxRecords(1000L)))
-
-                            .toStream()
-                }
-
-                .reduce { kStreamA, kStreamB -> kStreamB.merge(kStreamA) }
-
-                .map { k, v ->
-                    var activity = "[" +
-                            ((k.window().end() - k.window().start()) / 1000).toString().padStart(2, '0') +
-                            "s] | " +
-                            k.key()
-
-                    KeyValue(ActivityKey(k.key()),
-                            PopularityValue(
-                                    activity,
-                                    v,
-                                    k.window().endTime().epochSecond
-                            )
+        val popularityStream = listOf(
+            6 * 60 * 60,    // 6 hours
+            1 * 60 * 60,    // 1 hour
+            5 * 60,         // 5 minutes
+            60)             // 1 minute
+            .map { windowSize ->
+                groupedUserActivities
+                    .windowedBy (
+                        // Use a grace period of half the window size
+                        //
+                        TimeWindows
+                            .of(Duration.ofSeconds(windowSize.toLong()))
+                            .grace(Duration.ofMillis((windowSize / 2).toLong()))
                     )
-                }
+                    .count()
 
-                .groupBy({ _, v ->
-                    countProcessB++
-                    v.getSince()
-                }, Grouped.with(Serdes.Long(), popularityTopic.valueSerde))
-
-                .reduce { a, b ->
-                    if (a.getCount() > b.getCount()) a
-                    else b
-                }
-
-                .toStream()
-
-                .map { _, v -> KeyValue(ActivityKey(v.getActivity()), v) }
-
-                .through(popularityTopic.topic, popularityTopic.producedWith())
-
-                .foreach { _, v ->
-                    if (v != null) {
-                        println(" ttl:${v.getCount().toString().padStart(2, '0')}, win:${v.getActivity()} (records: $countProcess + $countProcessB)")
-                        println("${(v.getSince() - nowStartSecs)}s since start")
-                        println(" ")
+                    // Suppress - closed windows only
+                    //
+                    .suppress(untilWindowCloses(unbounded()))
+                    .toStream()
+                    .map { windowedKey, count ->
+                        KeyValue(
+                            PopularityKey(
+                                windowSize,
+                                windowedKey.window().start(),
+                                windowedKey.window().end()),
+                            PopularityValue(
+                                windowedKey.key(),
+                                count)
+                        )
                     }
-                }
+            }
+
+            .reduce { left, right -> right.merge(left) }
+            .through(popularityTopic.topic, popularityTopic.producedWith())
+
+        // From the popularity stream - count the most popular and pump to a table
+        //
+        popularityStream
+            .groupByKey()
+            .reduce ({ left, right ->
+                if (left.getCount() > right.getCount())
+                    left
+                else
+                    right
+            },
+                Materialized.`as`<PopularityKey, PopularityValue, KeyValueStore<Bytes, ByteArray>>("MostPopularActivity")
+                    .withKeySerde(popularityTopic.keySerde)
+                    .withValueSerde(popularityTopic.valueSerde))
+
+        // From the popularity stream - count the least popular and pump to a table
+        //
+        popularityStream
+            .groupByKey()
+            .reduce ({ left, right ->
+                if (left.getCount() > right.getCount())
+                    right
+                else
+                    left
+            },
+                Materialized.`as`<PopularityKey, PopularityValue, KeyValueStore<Bytes, ByteArray>>("LeastPopularActivity")
+                    .withKeySerde(popularityTopic.keySerde)
+                    .withValueSerde(popularityTopic.valueSerde))
 
         start()
     }
