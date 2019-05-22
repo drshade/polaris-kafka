@@ -24,8 +24,8 @@ GROUP BY
 --
 -- 5 minute most popular activity
 --
-INSERT INTO most_popular_activity_5_min
-SELECT
+CREATE TABLE most_popular_activity_5_min
+AS SELECT
     5 as INTERVAL,
     windowStart() as WINDOWSTART,
     windowEnd() as WINDOWEND,

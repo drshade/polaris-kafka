@@ -11,6 +11,7 @@ import { Button } from "@material-ui/core";
 import GoogleLogin from 'react-google-login';
 import { login } from '../../actions/session.login.action';
 import { logout } from '../../actions/session.logout.action';
+import { ping } from '../../actions/test.ping.action';
 
 import Wallet from "../wallet/Wallet";
 
@@ -30,6 +31,10 @@ class Home extends Component {
 
     this.setState({ openMenu: false });
     store.dispatch(login(token));
+  }
+
+  ping() {
+    store.dispatch(ping());
   }
 
   logout() {
@@ -105,14 +110,14 @@ class Home extends Component {
           )}
         </div>
 
-        {/* <div className="testcode">
+        <div className="testcode">
           <button type="button" onClick={() => this.ping()}>
             PING!
           </button>
           <div>Pinged: {this.props.pinged} </div>
           <div>Ponged: {this.props.ponged} </div>
           <div>Balance: {this.props.balance} </div>
-        </div> */}
+        </div>
       </div>
     );
   }

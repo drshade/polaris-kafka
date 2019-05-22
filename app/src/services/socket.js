@@ -1,8 +1,10 @@
 import store from '../store';
 import { getToken } from './token.service';
 
-const endpoint = 'wss://wakanda.p1.s7s.cloud/wakanda/ws/updates';
+// const endpoint = 'wss://wakanda.p1.s7s.cloud/wakanda/ws/updates';
 // const endpoint = 'ws://localhost:8080/wakanda/ws/updates';
+
+const endpoint = 'ws://localhost:8090/ws';
 
 let init = () => {
   let socket = new WebSocket(endpoint);
@@ -10,13 +12,21 @@ let init = () => {
   socket.onmessage = (event) => {
     const data = JSON.parse(event.data);
 
+    const polaris2redux = (event) => {
+      return {
+        "type": event.resource,
+        "action": event.action,
+        "data": event.data
+      }
+    };
+
     // Refactor.
     if (data instanceof Array) {
       data.forEach((update) => {
-        store.dispatch(update);
+        store.dispatch(polaris2redux(update));
       });
     } else {
-      store.dispatch(data);
+      store.dispatch(polaris2redux(data));
     }
   };
 
@@ -24,10 +34,6 @@ let init = () => {
     console.log('Websocket has disconnected, trying to reconnect.');
     setTimeout(() => {
       s = init();
-      
-      // This is a hack, sorry. :(
-      send('SESSION', 'LOGIN', {});
-
     }, 1000);
   };
 
@@ -44,15 +50,15 @@ let init = () => {
 
 let s = init();
 
-const send = (type, action, data) => {
+const send = (resource, action, data) => {
   // console.log(`Trying to send, (type: ${type}, action: ${action})`);
   if (s.readyState !== 1) {
-    setTimeout(() => send(type, action, data), 10);
+    setTimeout(() => send(resource, action, data), 10);
     return;
   }
 
-  const auth = getToken();
-  s.send(JSON.stringify({ type, action, auth, data }));
+  const token = "tom@synthesis.co.za"; // getToken();
+  s.send(JSON.stringify({ resource, action, token, data }));
 };
 
 export { send };

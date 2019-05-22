@@ -2,12 +2,16 @@ package test.sessions.consumers
 
 import com.google.gson.Gson
 import com.google.gson.annotations.SerializedName
+import org.apache.kafka.streams.errors.InvalidStateStoreException
+import org.apache.kafka.streams.state.QueryableStoreTypes
 import polaris.kafka.PolarisKafka
 import polaris.kafka.actionrouter.ActionKey
 import polaris.kafka.actionrouter.ActionValue
 import polaris.kafka.websocket.*
 import java.awt.event.ActionEvent
 import java.security.InvalidParameterException
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.TimeUnit
 
 const val WEBSOCKET_LISTEN_PORT = "websocket_listen_port"
 
@@ -54,15 +58,17 @@ fun main(args : Array<String>) {
             val pong = topic<ActionKey, ActionValue>("pongs", 12, 3)
 
             toTopic("TEST", "PING", ping)
-            toWebsocket("TEST", "PONG", pong, CAST.UNICAST)
+            toWebsocket("TEST", "PONG", pong, CAST.BROADCAST)
 
             toTopic("TEST", "BIGPING", ping)
             toWebsocket("TEST", "BIGPONG", pong, CAST.BROADCAST)
 
+            printConnected()
             start()
         }
 
         start()
+
         websocketServer.join()
     }
 }
