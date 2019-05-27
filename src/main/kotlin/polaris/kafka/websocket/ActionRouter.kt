@@ -12,13 +12,10 @@ import org.apache.kafka.common.utils.Bytes
 import org.apache.kafka.streams.KeyValue
 import org.apache.kafka.streams.errors.InvalidStateStoreException
 import org.apache.kafka.streams.kstream.*
-import org.apache.kafka.streams.processor.Processor
-import org.apache.kafka.streams.processor.ProcessorContext
-import org.apache.kafka.streams.processor.ProcessorSupplier
-import org.apache.kafka.streams.processor.StreamPartitioner
-import org.apache.kafka.streams.processor.To
+import org.apache.kafka.streams.processor.*
 import org.apache.kafka.streams.state.KeyValueStore
 import org.apache.kafka.streams.state.QueryableStoreTypes
+import org.apache.kafka.streams.state.ReadOnlyKeyValueStore
 import org.apache.kafka.streams.state.WindowStore
 import polaris.kafka.PolarisKafka
 import polaris.kafka.SafeTopic
@@ -26,6 +23,7 @@ import polaris.kafka.actionrouter.ActionValue
 import polaris.kafka.actionrouter.ActionKey
 import java.nio.ByteBuffer
 import java.time.Duration
+import java.util.concurrent.TimeUnit
 
 val gson = Gson()
 
@@ -165,6 +163,28 @@ class TrackAndTransformFromAction (private val polarisKafka : PolarisKafka, priv
     }
 }
 
+class AgeConnectedSockets : Processor<WebsocketEventKey?, WebsocketEventValue?> {
+    private var context : ProcessorContext? = null
+
+    override fun init(context: ProcessorContext?) {
+        this.context = context
+        context?.schedule(Duration.ofSeconds(5), PunctuationType.STREAM_TIME) { timestamp ->
+            var globalStore = context.getStateStore("WebsocketsConnectedGlobal") as KeyValueStore<String, ReplyPath>
+            globalStore.all().forEach { socket ->
+                println("AgeConnectedSockets socket: $socket")
+            }
+            println("AgeConnectedSockets running: $timestamp")
+        }
+    }
+
+    override fun process(key: WebsocketEventKey?, value: WebsocketEventValue?) {
+        println("AgeConnectedSockets process: $key -> $value")
+    }
+
+    override fun close() {
+    }
+}
+
 class ActionRouter(private val websocketTopic: SafeTopic<WebsocketEventKey, WebsocketEventValue>) {
 
     private val websocketStream : KStream<WebsocketEventKey, WebsocketEventValue>
@@ -183,10 +203,10 @@ class ActionRouter(private val websocketTopic: SafeTopic<WebsocketEventKey, Webs
         val websocketEventValueSerde = polarisKafka.serdeFor<WebsocketEventValue>()
         val replyPathSerde = polarisKafka.serdeFor<ReplyPath>()
 
-        // Tracking only connected sockets
+        // Tracking connected sockets
         //
         websocketStream
-            .filter { key, value ->
+            .filter { _, value ->
                 value.getState() != "SENT"
             }
             .map { key, value ->
@@ -195,7 +215,7 @@ class ActionRouter(private val websocketTopic: SafeTopic<WebsocketEventKey, Webs
             .groupByKey(Grouped.with(Serdes.String(), websocketEventValueSerde))
             .aggregate(
                 { null },
-                { key : String, value : WebsocketEventValue, accum : ReplyPath? ->
+                { key : String, value : WebsocketEventValue, _ : ReplyPath? ->
                     //println("WebsocketsConnected Key: $key Value: $value Accum: $accum")
                     if (value.getState() != "CLOSED" && value.getState() != "ERROR") {
                         println("WebsocketsConnected Key: $key ADDED Value: $value")
@@ -216,17 +236,25 @@ class ActionRouter(private val websocketTopic: SafeTopic<WebsocketEventKey, Webs
             .toStream()
             .to("websocket-connected-sockets", Produced.with(Serdes.String(), replyPathSerde))
 
-        // Make this local stores global (because we may need to broadcast to all)
+        // Make this local store global (everyone gets a copy of all connected websockets)
         //
         polarisKafka.createTopicIfNotExist("websocket-connected-sockets", 12, 2)
         polarisKafka.streamsBuilder.globalTable<String, ReplyPath>("websocket-connected-sockets",
             Materialized.`as`<String, ReplyPath, KeyValueStore<Bytes, ByteArray>>("WebsocketsConnectedGlobal")
             .withKeySerde(Serdes.String())
             .withValueSerde(replyPathSerde))
+
     }
 
     fun start () {
         polarisKafka.start()
+    }
+
+    fun printConnected () {
+        websocketStream
+            .process(ProcessorSupplier<WebsocketEventKey?, WebsocketEventValue?> {
+                AgeConnectedSockets()
+            })
     }
 
     fun toWebsocket (
@@ -249,7 +277,7 @@ class ActionRouter(private val websocketTopic: SafeTopic<WebsocketEventKey, Webs
             consumedStreams[from.topic] = polarisKafka.consumeStream(from)
             consumedStreams[from.topic]!!
         }
-        .filter { key, value ->
+        .filter { _, value ->
             value?.getResource() == matchResource && value.getAction() == matchAction
         }
         .transform(TransformerSupplier<ActionKey?, ActionValue?, KeyValue<WebsocketEventKey?, WebsocketEventValue?>>{
@@ -257,7 +285,7 @@ class ActionRouter(private val websocketTopic: SafeTopic<WebsocketEventKey, Webs
         })
         .filter { key, value -> key != null && value != null }
         .map { key, value -> KeyValue(key!!, value!!) }
-        .to(websocketTopic.topic, Produced.with(websocketTopic.keySerde, websocketTopic.valueSerde) { topic, key, value, numPartitions ->
+        .to(websocketTopic.topic, Produced.with(websocketTopic.keySerde, websocketTopic.valueSerde) { _, _, value, _ ->
             // Determine the partition from the replyPath
             //
             value.getReplyPath().getPartitions().shuffled()[0]
@@ -284,6 +312,7 @@ class ActionRouter(private val websocketTopic: SafeTopic<WebsocketEventKey, Webs
         topic : SafeTopic<ActionKey, ActionValue>) {
 
         websocketStream
+            .filter { _, value -> value.getState() == "RECV" }
             .filter { _, value ->
                 if (value.getData() == null) {
                     println("Cannot route with empty payload")

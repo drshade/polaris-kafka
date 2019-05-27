@@ -50,6 +50,8 @@ data class SafeTopic<K, V>(
         return Produced.with(keySerde, valueSerde)
     }
 
+    @Suppress("DEPRECATION")
+    @Deprecated("")
     fun serializedWith() : Serialized<K, V> {
         return Serialized.with(keySerde, valueSerde)
     }
@@ -155,7 +157,7 @@ class PolarisKafka {
         streamsBuilder = StreamsBuilder()
     }
 
-    inline fun <K : SpecificRecord> serdeFor() : SpecificAvroSerde<K> {
+    fun <K : SpecificRecord> serdeFor() : SpecificAvroSerde<K> {
         val valueSerde = SpecificAvroSerde<K>()
         valueSerde.configure(serdeConfig, false)
         return valueSerde

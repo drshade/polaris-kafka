@@ -79,6 +79,7 @@ class WebsocketServerConfigurator(
     val endpointHandler : WebsocketServerEndpointHandler)
     : ServerEndpointConfig.Configurator() {
     override fun <T : Any?> getEndpointInstance(endpointClass: Class<T>?): T {
+        @Suppress("UNCHECKED_CAST")
         return endpointHandler as T
     }
 }
@@ -108,7 +109,7 @@ class WebsocketServerEndpointHandler(private val websocketTopic : SafeTopic<Webs
         // How to dispatch different responses
         //
         processor.consumeStream(websocketTopic)
-            .filter { key, value -> value.getState() == "SENT" }
+            .filter { _, value -> value.getState() == "SENT" }
             .foreach { _, value ->
                 sendToWid(value.getReplyPath().getId(), value.getData())
             }
