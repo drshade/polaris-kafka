@@ -185,11 +185,15 @@ class AgeConnectedSockets : Processor<WebsocketEventKey?, WebsocketEventValue?> 
     }
 }
 
-class ActionRouter(private val websocketTopic: SafeTopic<WebsocketEventKey, WebsocketEventValue>) {
+class ActionRouter(
+    private val websocketEventsTopicName : String,
+    private val websocketSessionsByIdTopicName : String,
+    private val websocketSessionsByPrincipalTopicName : String) {
 
-    private val websocketStream : KStream<WebsocketEventKey, WebsocketEventValue>
     private val polarisKafka = PolarisKafka("polaris-kafka-action-router")
-    private val websocketProducer : KafkaProducer<WebsocketEventKey, WebsocketEventValue>
+    private val websocketEventsTopic : SafeTopic<String, WebsocketEventValue>
+    private val websocketSessionsByIdTopic : SafeTopic<String, ReplyPath>
+    private val websocketSessionsByPrincipalTopic : SafeTopic<String, ReplyPath>
 
     // Hold the references to any streams we are consuming
     //

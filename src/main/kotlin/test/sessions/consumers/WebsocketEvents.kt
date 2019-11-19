@@ -2,16 +2,8 @@ package test.sessions.consumers
 
 import com.google.gson.Gson
 import com.google.gson.annotations.SerializedName
-import org.apache.kafka.streams.errors.InvalidStateStoreException
-import org.apache.kafka.streams.state.QueryableStoreTypes
-import polaris.kafka.PolarisKafka
-import polaris.kafka.actionrouter.ActionKey
-import polaris.kafka.actionrouter.ActionValue
-import polaris.kafka.websocket.*
-import java.awt.event.ActionEvent
+import polaris.kafka.PolarisWebsocket
 import java.security.InvalidParameterException
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.TimeUnit
 
 const val WEBSOCKET_LISTEN_PORT = "websocket_listen_port"
 
@@ -22,7 +14,7 @@ data class AuthableJson(
     @SerializedName("token") val token : String
 )
 
-val authPlugin = { body : String ->
+val totallyUnsafeAuthPlugin = { body : String ->
     val gson = Gson()
     val authableBody = gson.fromJson<AuthableJson>(body, AuthableJson::class.java)
 
@@ -43,16 +35,17 @@ fun main(args : Array<String>) {
     val listenPort = System.getenv(WEBSOCKET_LISTEN_PORT)
         ?: throw InvalidParameterException("Missing environment variable '$WEBSOCKET_LISTEN_PORT'")
 
-    with(PolarisKafka("websocket-server")) {
-        val websocketTopic =
-                topic<WebsocketEventKey, WebsocketEventValue>("websocket-events", 12, 3)
+    val polarisWebsocket = PolarisWebsocket(
+        listenPort.toInt(),
+        "/ws",
+        "example-websocket-events",
+        ".polaris.websocket.events",
+        totallyUnsafeAuthPlugin)
 
-        val websocketServer = WebsocketServer(
-            listenPort.toInt(),
-            "/ws",
-            websocketTopic,
-            authPlugin)
+    with(polarisWebsocket) {
 
+
+        /*
         with(ActionRouter(websocketTopic)) {
             val ping = topic<ActionKey, ActionValue>("pings", 12, 3)
             val pong = topic<ActionKey, ActionValue>("pongs", 12, 3)
@@ -66,9 +59,8 @@ fun main(args : Array<String>) {
             printConnected()
             start()
         }
+        */
 
         start()
-
-        websocketServer.join()
     }
 }

@@ -1,23 +1,16 @@
 [
   {
     "namespace": "polaris.kafka.websocket",
-    "name": "WebsocketEventKey",
-    "type": "record",
-    "fields" : [
-      {
-        "name" : "id",
-        "type" : "string"
-      }
-    ]
-  },
-  {
-    "namespace": "polaris.kafka.websocket",
     "name": "WebsocketEventValue",
     "type": "record",
     "fields" : [
       {
         "name" : "id",
         "type" : "string"
+      },
+      {
+        "name" : "timestamp",
+        "type" : "long"
       },
       {
         "name" : "state",
@@ -38,6 +31,10 @@
               {
                 "name" : "id",
                 "type" : "string"
+              },
+              {
+                "name" : "timestamp",
+                "type" : "long"
               },
               {
                 "name" : "principal",

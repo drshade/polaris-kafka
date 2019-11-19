@@ -104,8 +104,8 @@ class PolarisKafka {
             // LogAndFailExceptionHandler::class.java
             LogAndContinueExceptionHandler::class.java
 
-        properties["key.serializer"] = "io.confluent.kafka.serializers.KafkaAvroSerializer"
-        properties["value.serializer"] = "io.confluent.kafka.serializers.KafkaAvroSerializer"
+        properties[ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG] = "io.confluent.kafka.serializers.KafkaAvroSerializer"
+        properties[ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG] = "io.confluent.kafka.serializers.KafkaAvroSerializer"
 
         properties[StreamsConfig.PRODUCER_PREFIX + ProducerConfig.INTERCEPTOR_CLASSES_CONFIG] =
             "io.confluent.monitoring.clients.interceptor.MonitoringProducerInterceptor"
@@ -204,11 +204,40 @@ class PolarisKafka {
         return SafeTopic(name, keySerde, valueSerde, properties)
     }
 
+    fun <V : SpecificRecord>stringKeyTopic(
+        name : String,
+        partitions : Int,
+        replicas : Int,
+        createIfNotExist : Boolean = true
+    ) : SafeTopic<String, V> {
+        // Ensure the topic exists
+        //
+        if (createIfNotExist) {
+            createTopicIfNotExist(name, partitions, replicas)
+        }
+
+        // Configure the serdes
+        //
+        val keySerde = Serdes.String()
+        val valueSerde = SpecificAvroSerde<V>()
+
+        keySerde.configure(serdeConfig, true)
+        valueSerde.configure(serdeConfig, false)
+
+        return SafeTopic(name, keySerde, valueSerde, properties)
+    }
+
     fun <K, V>consumeStream(topic : SafeTopic<K, V>) : KStream<K, V> {
         return streamsBuilder.stream(topic.topic, topic.consumedWith())
     }
 
-    fun start(partitionsAssignedToTopic : ((Map<String, List<Int>>) -> Unit)? = null) {
+    private var partitionsAssignedFunction : ((Map<String, List<Int>>) -> Unit)? = null
+
+    fun setPartitionsAssignedListener(func : ((Map<String, List<Int>>) -> Unit)) {
+        partitionsAssignedFunction = func
+    }
+
+    fun start() {
         println("Starting streams...")
         val topology = streamsBuilder.build()
         println(topology.describe())
@@ -233,9 +262,7 @@ class PolarisKafka {
 
                 // Notify the consumer that partitions and topics might have changed
                 //
-                if (partitionsAssignedToTopic != null) {
-                    partitionsAssignedToTopic(partitionAssignment)
-                }
+                partitionsAssignedFunction?.invoke(partitionAssignment)
             }
             catch (e : IllegalStateException) {
                 // Might not be running

@@ -1,20 +1,13 @@
 [
   {
     "namespace": "polaris.kafka.websocket.actionrouter",
-    "name": "ActionKey",
+    "name": "ActionValue",
     "type": "record",
     "fields" : [
       {
         "name" : "id",
         "type" : "string"
-      }
-    ]
-  },
-  {
-    "namespace": "polaris.kafka.websocket.actionrouter",
-    "name": "ActionValue",
-    "type": "record",
-    "fields" : [
+      },
       {
         "name" : "principal",
         "type" : ["null", "string"]
